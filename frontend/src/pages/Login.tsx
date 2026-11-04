@@ -163,7 +163,7 @@ export default function Login() {
 
       <div className="login-marca">
         <img className="login-marca-logo" src="/logo-webnet.svg" alt="WebNet" />
-        <strong>App Técnico</strong>
+        <strong>WEBNET Técnico</strong>
       </div>
 
       <div className="login-card">
