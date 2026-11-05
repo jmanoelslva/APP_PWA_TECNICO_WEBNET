@@ -28,6 +28,7 @@ ATUALIZAR = "sudo bash /opt/webnet-tecnico/deploy/install.sh"
 TITULOS = {
     "1.20.0": "Busca geral, Conexão em abas, Configurações e interface para campo",
     "1.22.0": "Jeito de app nativo, checklist de saída, abas e busca corrigida",
+    "1.23.0": "Aviso acima do botão de etapa da OS",
     "1.0.0": "Primeira versão estável",
     "1.4.0": "Sessão do Controllr pelo cookie do login e detecção de sessão encerrada",
     "1.5.0": "Motivo e data/hora da última queda da ONU",
