@@ -31,6 +31,7 @@ TITULOS = {
     "1.23.0": "Aviso acima do botão de etapa da OS",
     "1.23.1": "Seleção de texto só nos campos de entrada",
     "1.23.2": "Botões da OS em grade, etiquetas visíveis e sem menu ao segurar",
+    "1.23.3": "Voltar como app nativo, teclado certo nos campos e tela de trás parada",
     "1.0.0": "Primeira versão estável",
     "1.4.0": "Sessão do Controllr pelo cookie do login e detecção de sessão encerrada",
     "1.5.0": "Motivo e data/hora da última queda da ONU",
