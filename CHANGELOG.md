@@ -7,6 +7,11 @@ e este projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR
 
 ## [Não lançado]
 
+### Corrigido
+
+- **Aviso cobrindo o botão de etapa:** com a barra de ação no rodapé da OS, o
+  aviso aparece acima dela.
+
 ### Alterado
 
 - **Login:** o nome embaixo do logotipo passa a ser "WEBNET Técnico" (antes
