@@ -8,7 +8,9 @@ import SeloQuedas from '../components/SeloQuedas'
 import ProntoParaFechar from '../components/ProntoParaFechar'
 import { verificarFechamento, type ItemFechamento } from '../utils/fechamentoOs'
 import PullToRefresh from '../components/PullToRefresh'
+import { FaWhatsapp } from 'react-icons/fa'
 import AcoesContato from '../components/AcoesContato'
+import { MENSAGENS_CLIENTE, linkWhatsappComTexto, primeiroNome } from '../utils/mensagensCliente'
 import Skeleton from '../components/Skeleton'
 import EstadoErro from '../components/EstadoErro'
 import { useToast } from '../components/Toast/useToast'
@@ -50,7 +52,7 @@ import {
 import { linkRota, osAtrasada, quandoOs } from '../utils/minhasOs'
 import { comprimirImagem } from '../utils/imagem'
 import { EVENTO_FILA, ehFalhaDeRede, enfileirarAnexo, type DetalheEventoFila } from '../utils/filaAnexos'
-import { ITENS_CHECKLIST, lerChecklist, salvarChecklist, textoChecklist } from '../utils/checklistSaida'
+import { lerRascunhoFinalizacao, salvarRascunhoFinalizacao } from '../utils/rascunhoFinalizacao'
 import './DetalheOrdemServico.css'
 import { useFecharComVoltar } from '../hooks/useFecharComVoltar'
 
@@ -194,7 +196,7 @@ type AbaOs = 'resumo' | 'conexao' | 'checklist' | 'historico'
 
 // O topo (título, etapas, rota e contato) e o botão do rodapé ficam fora das
 // abas, sempre à vista. "Checklist" junta o que se faz ao terminar o
-// atendimento: checklist de saída e fotos/anexos.
+// atendimento: "Antes de finalizar" e fotos/anexos.
 const ABAS: Aba<AbaOs>[] = [
   { chave: 'resumo', rotulo: 'Resumo' },
   { chave: 'conexao', rotulo: 'Conexão' },
@@ -252,14 +254,8 @@ function DetalheOrdemServicoConteudo() {
 
   const inputArquivoRef = useRef<HTMLInputElement>(null)
   const inputCameraRef = useRef<HTMLInputElement>(null)
-  // Checklist de saída desta OS (salvo no aparelho por OS).
-  const [checklist, setChecklist] = useState<string[]>([])
 
   useEffect(() => () => urlsPreviaRef.current.forEach((url) => URL.revokeObjectURL(url)), [])
-
-  useEffect(() => {
-    if (osAtual?.op_pk) setChecklist(lerChecklist(osAtual.op_pk))
-  }, [osAtual?.op_pk])
 
   // Anexo que estava na fila saiu (ou foi recusado) com a tela aberta.
   useEffect(() => {
@@ -272,13 +268,6 @@ function DetalheOrdemServicoConteudo() {
     window.addEventListener(EVENTO_FILA, aoMudarFila)
     return () => window.removeEventListener(EVENTO_FILA, aoMudarFila)
   }, [])
-
-  function alternarItemChecklist(chave: string) {
-    if (!osAtual?.op_pk) return
-    const novo = checklist.includes(chave) ? checklist.filter((item) => item !== chave) : [...checklist, chave]
-    setChecklist(novo)
-    salvarChecklist(osAtual.op_pk, novo)
-  }
 
   useEffect(() => {
     if (!Number.isFinite(pk)) return
@@ -359,7 +348,7 @@ function DetalheOrdemServicoConteudo() {
     if (item.chave === 'endereco') {
       if (!endereco) return null
       return (
-        <button type="button" className="pronto-fechar-acao" onClick={() => abrirEndereco(endereco, 'localizacao')}>
+        <button type="button" className="pronto-fechar-acao acao-ir" onClick={() => abrirEndereco(endereco, 'localizacao')}>
           Marcar local
         </button>
       )
@@ -374,7 +363,7 @@ function DetalheOrdemServicoConteudo() {
       // Sinal → aba Sinal; ONU (registrar cliente) → aba Equipamento.
       const abaOnu = item.chave === 'sinal' ? 'sinal' : 'equipamento'
       return (
-        <Link to={`/onu?${busca ? `${busca}&` : ''}aba=${abaOnu}`} className="pronto-fechar-acao" viewTransition>
+        <Link to={`/onu?${busca ? `${busca}&` : ''}aba=${abaOnu}`} className="pronto-fechar-acao acao-rede" viewTransition>
           {item.chave === 'sinal' ? 'Sinal' : 'ONU'}
         </Link>
       )
@@ -382,7 +371,7 @@ function DetalheOrdemServicoConteudo() {
     if (!cpe?.pk) return null
     const abaConexao = item.chave === 'cto' ? 'cto' : 'resumo'
     return (
-      <Link to={`/conexao?cpe_pk=${cpe.pk}&aba=${abaConexao}`} className="pronto-fechar-acao" viewTransition>
+      <Link to={`/conexao?cpe_pk=${cpe.pk}&aba=${abaConexao}`} className="pronto-fechar-acao acao-rede" viewTransition>
         {item.chave === 'cto' ? 'CTO' : 'Conexão'}
       </Link>
     )
@@ -445,11 +434,9 @@ function DetalheOrdemServicoConteudo() {
         acaoConfirmando.desfazer ? `Etapa "${etapa.rotulo}" desfeita.` : `Etapa "${etapa.rotulo}" confirmada.`,
         'sucesso',
       )
-      // Finalizada: o checklist já foi para a descrição — não fica marcado
-      // no aparelho (nem reaparece se a OS for reaberta).
+      // Finalizada: o rascunho da descrição já foi enviado.
       if (etapa.chave === 'finalizar' && !acaoConfirmando.desfazer) {
-        salvarChecklist(osAtual.op_pk, [])
-        setChecklist([])
+        salvarRascunhoFinalizacao(osAtual.op_pk, '')
       }
       setAcaoConfirmando(null)
       setObservacaoEtapa('')
@@ -551,7 +538,7 @@ function DetalheOrdemServicoConteudo() {
         {!carregando && !erro && !osAtual && (
           <div className="detalhe-ordem-card">
             <p className="detalhe-ordem-vazio">Nenhuma OS encontrada para este chamado.</p>
-            <Link to={`/suporte/${pk}`} className="detalhe-ordem-chip" viewTransition>
+            <Link to={`/suporte/${pk}`} className="detalhe-ordem-chip acao-registro" viewTransition>
               <LuMessageCircle size={16} /> Ver chamado
             </Link>
           </div>
@@ -567,17 +554,36 @@ function DetalheOrdemServicoConteudo() {
                 <span className="detalhe-ordem-etapa-badge">{estagioResumo(eventos, osAtual)}</span>
               </div>
               {osAtual.client_complete_name && <span className="detalhe-ordem-subtitulo">{osAtual.client_complete_name}</span>}
-              <div className="detalhe-ordem-metas">
+              {/* Dados da OS em lista rótulo/valor, uma linha cada (sem quebra). */}
+              <dl className="detalhe-ordem-dados">
                 {osAtual.op_date_sched && (
-                  <span className="detalhe-ordem-meta" title={`Agendada para ${formatarDataHora(osAtual.op_date_sched)}`}>
-                    {quandoOs(osAtual.op_date_sched)}
-                  </span>
+                  <>
+                    <dt>Agendada</dt>
+                    <dd title={`Agendada para ${formatarDataHora(osAtual.op_date_sched)}`}>
+                      {atrasada && <span className="detalhe-ordem-dado-atraso">Atrasada · </span>}
+                      {quandoOs(osAtual.op_date_sched)}
+                    </dd>
+                  </>
                 )}
-                {atrasada && <span className="detalhe-ordem-meta detalhe-ordem-meta-atraso">Atrasada</span>}
-                {osAtual.task_name && <span className="detalhe-ordem-meta">{osAtual.task_name}</span>}
-                {osAtual.op_number && <span className="detalhe-ordem-meta">OS {osAtual.op_number}</span>}
-                {protocolo && <span className="detalhe-ordem-meta">Chamado {protocolo}</span>}
-              </div>
+                {osAtual.task_name && (
+                  <>
+                    <dt>Serviço</dt>
+                    <dd>{osAtual.task_name}</dd>
+                  </>
+                )}
+                {osAtual.op_number && (
+                  <>
+                    <dt>OS</dt>
+                    <dd className="detalhe-ordem-dado-codigo">{osAtual.op_number}</dd>
+                  </>
+                )}
+                {protocolo && (
+                  <>
+                    <dt>Chamado</dt>
+                    <dd className="detalhe-ordem-dado-codigo">{protocolo}</dd>
+                  </>
+                )}
+              </dl>
               {osAtual.op_pk && !encerrada && (
                 <ol className="detalhe-ordem-passos" aria-label="Etapas da OS">
                   <li className="detalhe-ordem-passo-feito">Agendada</li>
@@ -600,19 +606,18 @@ function DetalheOrdemServicoConteudo() {
               {/* Ações do topo em grade: mesmo tamanho, ícone sobre o rótulo. */}
               <div className="detalhe-ordem-contato grade-acoes">
                 {rota && (
-                  <a href={rota} target="_blank" rel="noreferrer" className="acoes-contato-botao detalhe-ordem-rota">
+                  <a href={rota} target="_blank" rel="noreferrer" className="acoes-contato-botao acao-ir">
                     <LuNavigation size={22} /> Rota
                   </a>
                 )}
                 <AcoesContato numero={telefone} />
-                <Link to={`/suporte/${pk}`} className="acoes-contato-botao" viewTransition>
+                <Link to={`/suporte/${pk}`} className="acoes-contato-botao acao-registro" viewTransition>
                   <LuMessageCircle size={22} /> Chamado
                 </Link>
                 {osAtual.client_pk && (
                   <Link
                     to={`/mapa?cliente=${osAtual.client_pk}`}
-                    className="grade-acao"
-                    style={{ '--acao-cor': CORES.endereco } as CSSProperties}
+                    className="grade-acao acao-ir"
                     viewTransition
                   >
                     <LuMap size={22} /> Mapa
@@ -621,7 +626,7 @@ function DetalheOrdemServicoConteudo() {
               </div>
             </div>
 
-            <Abas abas={ABAS} ativa={aba} onEscolher={setAba} cor={CORES.suporte} rotulo="Partes da OS" />
+            <Abas abas={ABAS} ativa={aba} onEscolher={setAba} rotulo="Partes da OS" />
 
             {aba === 'resumo' && (
               <>
@@ -639,6 +644,26 @@ function DetalheOrdemServicoConteudo() {
                         <p className="detalhe-ordem-descricao">{osAtual.op_obs}</p>
                       </>
                     )}
+                  </div>
+                )}
+
+                {!encerrada && linkWhatsappComTexto(telefone, '') && (
+                  <div className="detalhe-ordem-card">
+                    <h2>Avisar o cliente</h2>
+                    <div className="detalhe-ordem-mensagens">
+                      {MENSAGENS_CLIENTE.map((mensagem) => (
+                        <a
+                          key={mensagem.chave}
+                          href={linkWhatsappComTexto(telefone, mensagem.texto(primeiroNome(osAtual.client_complete_name))) ?? undefined}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="detalhe-ordem-mensagem acao-contato"
+                        >
+                          <FaWhatsapp size={18} aria-hidden="true" />
+                          {mensagem.rotulo}
+                        </a>
+                      ))}
+                    </div>
                   </div>
                 )}
 
@@ -661,8 +686,7 @@ function DetalheOrdemServicoConteudo() {
                       {endereco?.address_pk && (
                         <button
                           type="button"
-                          className="botao botao-secundario botao-pequeno"
-                          style={{ '--botao-cor': CORES.suporte } as CSSProperties}
+                          className="botao botao-secundario botao-pequeno acao-registro"
                           onClick={() => abrirEndereco(endereco, 'endereco')}
                         >
                           <LuPencil size={16} /> Editar
@@ -673,8 +697,7 @@ function DetalheOrdemServicoConteudo() {
                           href={`https://www.google.com/maps/search/?api=1&query=${endereco.address_latitude},${endereco.address_longitude}`}
                           target="_blank"
                           rel="noreferrer"
-                          className="botao botao-secundario botao-pequeno"
-                          style={{ '--botao-cor': CORES.endereco } as CSSProperties}
+                          className="botao botao-secundario botao-pequeno acao-ir"
                         >
                           <LuMapPin size={16} /> Ver no mapa
                         </a>
@@ -682,8 +705,7 @@ function DetalheOrdemServicoConteudo() {
                         endereco?.address_pk && (
                           <button
                             type="button"
-                            className="botao botao-secundario botao-pequeno"
-                            style={{ '--botao-cor': CORES.endereco } as CSSProperties}
+                            className="botao botao-secundario botao-pequeno acao-ir"
                             onClick={() => abrirEndereco(endereco, 'localizacao')}
                           >
                             <LuLocateFixed size={16} /> Marcar local
@@ -758,8 +780,8 @@ function DetalheOrdemServicoConteudo() {
                     </p>
                   )}
                   {cpe?.pk && (
-                    <Link to={`/conexao?cpe_pk=${cpe.pk}`} className="detalhe-ordem-chip" viewTransition>
-                      <LuWifi size={16} /> Ver conexão completa
+                    <Link to={`/conexao?cpe_pk=${cpe.pk}`} className="botao botao-secundario botao-largo acao-rede detalhe-ordem-ver-conexao" viewTransition>
+                      <LuWifi size={18} /> Ver conexão completa
                     </Link>
                   )}
                 </div>
@@ -780,34 +802,6 @@ function DetalheOrdemServicoConteudo() {
                     })}
                     acao={(item: ItemFechamento) => acaoFechamento(item)}
                   />
-                )}
-                {!encerrada && osAtual.op_pk && (
-                  <div className="detalhe-ordem-card">
-                    <div className="detalhe-ordem-topo">
-                      <h2>Checklist de saída</h2>
-                      <span className="detalhe-ordem-checklist-contagem">
-                        {checklist.length} de {ITENS_CHECKLIST.length}
-                      </span>
-                    </div>
-                    <div className="detalhe-ordem-checklist">
-                      {ITENS_CHECKLIST.map((item) => (
-                        <label key={item.chave}>
-                          <input
-                            type="checkbox"
-                            checked={checklist.includes(item.chave)}
-                            onChange={() => alternarItemChecklist(item.chave)}
-                          />
-                          <span>
-                            {item.rotulo}
-                            {item.chave === 'sinal' && onuOs?.omddm_rx_power != null && (
-                              <small> · agora {onuOs.omddm_rx_power.toLocaleString('pt-BR')} dBm</small>
-                            )}
-                          </span>
-                        </label>
-                      ))}
-                    </div>
-                    <p className="detalhe-ordem-lido">Ao finalizar, o que estiver marcado já entra na descrição.</p>
-                  </div>
                 )}
 
                 <div className="detalhe-ordem-card">
@@ -962,9 +956,9 @@ function DetalheOrdemServicoConteudo() {
                   className="botao botao-primario botao-bloco detalhe-ordem-barra-botao"
                   style={{ '--botao-cor': CORES.suporte } as CSSProperties}
                   onClick={() => {
-                    // Finalizar: o checklist marcado já entra na descrição (editável).
-                    if (proximaEtapa.chave === 'finalizar' && !observacaoEtapa.trim()) {
-                      setObservacaoEtapa(textoChecklist(checklist, onuOs?.omddm_rx_power))
+                    // Finalizar: volta o rascunho salvo neste aparelho, se houver.
+                    if (proximaEtapa.chave === 'finalizar' && !observacaoEtapa.trim() && osAtual?.op_pk) {
+                      setObservacaoEtapa(lerRascunhoFinalizacao(osAtual.op_pk))
                     }
                     setAcaoConfirmando({ etapa: proximaEtapa.chave, desfazer: false })
                   }}
@@ -999,10 +993,18 @@ function DetalheOrdemServicoConteudo() {
               </p>
               <textarea
                 value={observacaoEtapa}
-                onChange={(e) => setObservacaoEtapa(e.target.value)}
+                onChange={(e) => {
+                  setObservacaoEtapa(e.target.value)
+                  if (acaoConfirmando.etapa === 'finalizar' && !acaoConfirmando.desfazer && osAtual?.op_pk) {
+                    salvarRascunhoFinalizacao(osAtual.op_pk, e.target.value)
+                  }
+                }}
                 placeholder="Ex: Trocado cabo de rede, sinal normalizado."
                 rows={3}
               />
+              {acaoConfirmando.etapa === 'finalizar' && !acaoConfirmando.desfazer && observacaoEtapa.trim() && (
+                <p className="detalhe-ordem-rascunho">Rascunho salvo neste aparelho</p>
+              )}
               <div className="detalhe-ordem-modal-acoes">
                 <button
                   className="botao botao-secundario"
