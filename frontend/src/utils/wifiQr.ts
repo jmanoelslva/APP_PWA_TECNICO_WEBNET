@@ -1,5 +1,4 @@
-// QR Code do Wi-Fi (formato que a câmera do Android e do iPhone entende:
-// WIFI:T:WPA;S:<rede>;P:<senha>;;) e o texto para mandar no WhatsApp.
+// QR do Wi-Fi (WIFI:T:WPA;S:<rede>;P:<senha>;;) e texto para WhatsApp.
 
 /** \ ; , " e : precisam de barra antes, pela especificação do formato. */
 function escapar(valor: string): string {

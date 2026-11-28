@@ -3,8 +3,7 @@ export type Tema = 'light' | 'dark'
 export type EscolhaTema = Tema | 'auto'
 
 const CHAVE_TEMA = 'webnet-tecnico-tema'
-// Modo sol (alto contraste, ver index.css :root[data-sol]) — independente
-// do tema claro/escuro; ligado, vale por cima dos dois.
+// Modo sol, independente do tema.
 const CHAVE_SOL = 'webnet-tecnico-sol'
 // Texto grande (index.css :root[data-texto='grande']).
 const CHAVE_TEXTO = 'webnet-tecnico-texto'
@@ -67,8 +66,7 @@ function aplicar(tema: Tema): void {
   document.documentElement.setAttribute('data-theme', tema)
   // Fundo provisório de public/tema-inicial.js: a partir daqui vale o CSS.
   document.documentElement.style.background = ''
-  // Barra de status do celular acompanha a escolha manual (o index.html
-  // tem uma meta por tema do sistema; aqui as duas passam a seguir o app).
+  // Barra de status do celular segue o tema do app.
   const sol = solLigado()
   if (sol) document.documentElement.setAttribute('data-sol', '1')
   else document.documentElement.removeAttribute('data-sol')
@@ -101,12 +99,7 @@ export function definirTema(escolha: EscolhaTema): void {
   aplicar(escolha === 'auto' ? temaDoSistema() : escolha)
 }
 
-/**
- * Aplica o tema assim que o app carrega e mantém sincronizado com o
- * sistema operacional enquanto o técnico não tiver escolhido nada
- * manualmente — chamado uma vez em main.tsx, antes do primeiro render,
- * para não piscar no tema errado.
- */
+/** Aplica o tema antes do 1º render e acompanha o sistema sem escolha manual. */
 export function iniciarTema(): void {
   aplicar(temaAtual())
   aplicarTexto(textoGrande())

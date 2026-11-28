@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ChangeEvent, type CSSProperties } from 'react'
+import { useEffect, useRef, useState, type ChangeEvent } from 'react'
 import { Link, useLocation, useParams } from 'react-router-dom'
 import { LuCamera, LuCircleCheck, LuPhone, LuCopy, LuEye, LuEyeOff, LuLocateFixed, LuMap, LuMapPin, LuMessageCircle, LuNavigation, LuPaperclip, LuPencil, LuPlay } from 'react-icons/lu'
 import ModalEditarEndereco, { type AbaEndereco } from '../components/ModalEditarEndereco'
@@ -18,7 +18,6 @@ import BarraAtendimento from '../components/BarraAtendimento'
 import IpComAcesso from '../components/IpComAcesso'
 import EstadoErro from '../components/EstadoErro'
 import { useToast } from '../components/Toast/useToast'
-import { CORES } from '../utils/cores'
 import {
   ApiError,
   buscarCpe,
@@ -80,20 +79,8 @@ const TEXTO_SITUACAO_ANEXO: Record<AnexoEnviado['situacao'], string> = {
   fila: 'Na fila: sai quando o sinal voltar',
 }
 
-// Os 4 estágios de uma OS (não documentado oficialmente): Agendada
-// (feita pelo escritório, já vem pronta) -> Respondida -> Iniciada ->
-// Finalizada, as 3 últimas marcadas (e desmarcadas) pelo técnico aqui.
-// Fechar é etapa à parte, só do escritório (ACL do Controllr não libera
-// para o técnico) — por isso não há botão de fechar nesta tela.
-//
-// Os campos op_date_answer/start/finish do registro raiz da OS (osAtual)
-// ficam sempre nulos. Cada clique em marcar/desfazer cria um novo
-// registro de evento em /support_ctl/op/list (mesmo endpoint do chat,
-// ver listarMensagensTicket) vinculado à OS via op_os_pk = op_pk da
-// raiz. Um "marcar" grava esse evento com a data preenchida; um
-// "desfazer" grava outro evento do mesmo op_type com a data nula. O
-// estágio de cada etapa é calculado a partir do evento mais recente
-// daquele tipo, não de um campo fixo.
+// Etapas da OS: responder, iniciar e finalizar (com desfazer), sempre em ordem. Fechar é só do escritório. Cada ação
+// cria um evento em /support_ctl/op/list; a etapa vale pelo evento mais recente de cada tipo.
 type Etapa = 'responder' | 'iniciar' | 'finalizar'
 
 interface ConfigEtapa {
@@ -144,7 +131,7 @@ const ETAPAS: ConfigEtapa[] = [
   },
 ]
 
-/** Evento mais recente (maior op_pk) daquele tipo, vinculado à OS raiz — ou undefined se nunca aconteceu. */
+/** Evento mais recente (maior op_pk) do tipo, ou undefined. */
 function ultimoEvento(eventos: OperacaoDto[], osRaizPk: number, opType: number): OperacaoDto | undefined {
   return eventos
     .filter((e) => e.op_os_pk === osRaizPk && e.op_type === opType)
@@ -154,12 +141,7 @@ function ultimoEvento(eventos: OperacaoDto[], osRaizPk: number, opType: number):
     }, undefined)
 }
 
-/**
- * Data da etapa: a do evento mais recente daquele tipo; sem evento algum
- * (etapa marcada fora do app ou OS transferida de técnico, quando o
- * Controllr só deixa a data na raiz), vale a data da raiz, como no
- * backend (ordens_servico.py::_etapa_marcada).
- */
+/** Data do evento; sem evento, a da raiz (como o backend). */
 function dataEtapa(eventos: OperacaoDto[], os: OrdemServicoDto, etapa: ConfigEtapa): string | undefined {
   const evento = os.op_pk ? ultimoEvento(eventos, os.op_pk, etapa.opType) : undefined
   return evento ? evento[etapa.campoData] : os[etapa.campoData]
@@ -169,19 +151,9 @@ function etapaConcluida(eventos: OperacaoDto[], os: OrdemServicoDto, etapa: Conf
   return !!dataEtapa(eventos, os, etapa)
 }
 
-/**
- * As 3 etapas do técnico seguem sequência obrigatória, nos dois sentidos:
- * não dá para pular direto para "Finalizada" sem
- * "Respondida"/"Iniciada" antes, e para desfazer uma etapa é preciso
- * desfazer as posteriores primeiro (não dá para desfazer "Respondida"
- * com "Iniciada" ainda de pé). Cada etapa só tem UMA ação disponível
- * por vez: "confirmar" se é a próxima pendente, "desfazer" se é a
- * última concluída — nunca as duas, nunca nenhuma no meio da lista.
- */
+/** Sequência obrigatória: confirmar a próxima pendente ou desfazer a última concluída. */
 function situacaoEtapa(concluidas: boolean[], indice: number): 'confirmar' | 'desfazer' | 'bloqueada' {
   if (concluidas[indice]) {
-    // Só a última concluída pode ser desfeita — se alguma posterior
-    // também estiver concluída, essa aqui fica bloqueada até lá.
     const temPosteriorConcluida = concluidas.slice(indice + 1).some(Boolean)
     return temPosteriorConcluida ? 'bloqueada' : 'desfazer'
   }
@@ -190,7 +162,7 @@ function situacaoEtapa(concluidas: boolean[], indice: number): 'confirmar' | 'de
   return anterioresProntas ? 'confirmar' : 'bloqueada'
 }
 
-/** Rótulo resumido para o cabeçalho — a última das 3 etapas que estiver concluída, ou "Agendada". */
+/** Última etapa concluída, ou "Agendada". */
 function estagioResumo(eventos: OperacaoDto[], os: OrdemServicoDto): string {
   if (os.op_date_cancel) return 'Cancelada'
   if (os.op_date_close) return 'Fechada'
@@ -210,9 +182,7 @@ function enderecoResumo(endereco: { address?: string; address_number?: string; a
 
 type AbaOs = 'resumo' | 'conexao' | 'checklist' | 'historico'
 
-// O topo (título, etapas, rota e contato) e o botão do rodapé ficam fora das
-// abas, sempre à vista. "Checklist" junta o que se faz ao terminar o
-// atendimento: "Antes de finalizar" e fotos/anexos.
+// Topo e botão do rodapé fora das abas. Checklist = "Antes de finalizar" + anexos.
 const ABAS: Aba<AbaOs>[] = [
   { chave: 'resumo', rotulo: 'Resumo' },
   { chave: 'conexao', rotulo: 'Conexão' },
@@ -253,8 +223,7 @@ function DetalheOrdemServicoConteudo() {
   const [carregando, setCarregando] = useState(true)
   const [erro, setErro] = useState<string | null>(null)
   const [mostrarSenha, setMostrarSenha] = useState(false)
-  // { etapa, desfazer: true } quando o técnico clica no botão de uma
-  // etapa JÁ concluída (quer desfazer); false quando quer marcar.
+  // desfazer: true ao tocar numa etapa já concluída.
   const [acaoConfirmando, setAcaoConfirmando] = useState<{ etapa: Etapa; desfazer: boolean } | null>(null)
   const [observacaoEtapa, setObservacaoEtapa] = useState('')
   const [executandoEtapa, setExecutandoEtapa] = useState(false)
@@ -264,8 +233,7 @@ function DetalheOrdemServicoConteudo() {
     setObservacaoEtapa('')
   })
   const [enviandoAnexo, setEnviandoAnexo] = useState(false)
-  // Anexos enviados nesta tela, com a prévia da imagem já na hora (do próprio
-  // arquivo escolhido, sem esperar o Controllr).
+  // Prévia do próprio arquivo, sem esperar o Controllr.
   const [anexosEnviados, setAnexosEnviados] = useState<AnexoEnviado[]>([])
   const urlsPreviaRef = useRef<string[]>([])
 
@@ -312,16 +280,12 @@ function DetalheOrdemServicoConteudo() {
             setTelefone(extrairTelefones(resposta.cliente.client_phones))
             const contratoDaOs = resposta.contratos.find((c) => c.contract_pk === os.contract_pk)
             setContrato(contratoDaOs ?? resposta.contratos[0] ?? null)
-            // Mesmos dados do endereço mostrados no Detalhe do Cliente
-            // (cidade/UF, coordenadas para o Google Maps) — a OS em si só traz
-            // um resumo (address/number/neighborhood), sem isso.
+            // Endereço completo (a OS só traz o resumo).
             const enderecoDaOs = resposta.enderecos.find((e) => e.address_pk === os.address_pk)
             setEndereco(enderecoDaOs ?? resposta.enderecos[0] ?? null)
           })
           .catch(() => {})
-        // Prioriza o contrato específico desta OS para achar a CPE certa —
-        // client_pk sozinho poderia trazer a CPE de outro contrato do
-        // mesmo cliente, se ele tiver mais de uma conexão.
+        // Contrato da OS primeiro, para achar a CPE certa.
         buscarCpe(os.contract_pk ? { contract_pk: os.contract_pk } : { client_pk: os.client_pk })
           .then((resposta) => {
             const cpeDaOs = resposta.results[0] ?? null
@@ -351,9 +315,7 @@ function DetalheOrdemServicoConteudo() {
     }
   }
 
-  // Os eventos de responder/iniciar/finalizar/desfazer vêm do MESMO
-  // endpoint do chat (/support_ctl/op/list) — recarrega só isso depois
-  // de uma ação, sem precisar refazer as buscas de cliente/contrato/CPE.
+  // Recarrega só os eventos após uma ação.
   function recarregarEventos() {
     listarMensagensTicket(pk)
       .then((resposta) => setEventos(resposta.results))
@@ -407,19 +369,13 @@ function DetalheOrdemServicoConteudo() {
   async function confirmarEtapa() {
     const indice = ETAPAS.findIndex((e) => e.chave === acaoConfirmando?.etapa)
     const etapa = ETAPAS[indice]
-    // O parâmetro que a ação espera ("op_os_pk") é o próprio op_pk da OS
-    // raiz (agendada pelo escritório) — o campo op_os_pk do registro
-    // raiz vem null, já que ele não referencia "outra" OS, é a própria;
-    // só os eventos que ela gera têm op_os_pk preenchido.
+    // op_os_pk da ação = op_pk da OS raiz.
     if (!etapa || !acaoConfirmando || !osAtual?.op_pk) {
       toast('Nenhuma OS aberta encontrada para este chamado.')
       setAcaoConfirmando(null)
       return
     }
-    // Confere de novo com os dados mais recentes (defesa contra estado
-    // desatualizado, ex: outro técnico mexeu na mesma OS enquanto o
-    // diálogo estava aberto) — o botão já vem desabilitado fora de
-    // ordem, mas não custa garantir aqui também.
+    // Confere a ordem de novo com os dados atuais.
     const concluidas = ETAPAS.map((e) => etapaConcluida(eventos, osAtual, e))
     const situacao = situacaoEtapa(concluidas, indice)
     const acaoEsperada = acaoConfirmando.desfazer ? 'desfazer' : 'confirmar'
@@ -435,9 +391,7 @@ function DetalheOrdemServicoConteudo() {
       return
     }
     const observacao = observacaoEtapa.trim()
-    // Só "Finalizar" exige descrição — "Responder" e "Iniciar" ficam com
-    // o campo opcional, para o técnico usar se quiser. Desfazer nunca
-    // exige (o motivo de desfazer é sempre opcional).
+    // Descrição obrigatória só ao finalizar.
     const exigeObservacao = etapa.chave === 'finalizar' && !acaoConfirmando.desfazer
     if (exigeObservacao && !observacao) {
       toast(`Descreva o que foi feito antes de confirmar "${etapa.rotulo}".`)
@@ -446,8 +400,6 @@ function DetalheOrdemServicoConteudo() {
     setExecutandoEtapa(true)
     try {
       const chamada = acaoConfirmando.desfazer ? etapa.desfazer : etapa.marcar
-      // Ao finalizar, o serial da ONU vai junto: o servidor lê o sinal e
-      // registra na Auditoria (as outras etapas ignoram o campo).
       const parametros = {
         opOsPk: osAtual.op_pk,
         opDesc: observacao,
@@ -509,9 +461,7 @@ function DetalheOrdemServicoConteudo() {
         await paraFila()
         return
       }
-      // O anexo vai para o chamado (ticket) — é o mesmo endpoint/local onde
-      // ele aparece na tela de chat do Suporte, mesmo sendo anexado aqui
-      // na tela da OS.
+      // Anexo vai para o chamado.
       await enviarAnexoTicket(pk, arquivo)
       situacao('enviado')
       toast('Anexo enviado.', 'sucesso')
@@ -531,15 +481,12 @@ function DetalheOrdemServicoConteudo() {
     return <p className="detalhe-ordem-status">OS não encontrada.</p>
   }
 
-  // Próxima etapa pendente (a única que pode ser confirmada agora): vira o
-  // botão fixo no rodapé, no alcance do polegar, em vez de ficar no último
-  // card da tela. OS fechada/cancelada não tem próxima etapa.
+  // Próxima etapa pendente vira o botão do rodapé.
   const concluidas = osAtual?.op_pk ? ETAPAS.map((e) => etapaConcluida(eventos, osAtual, e)) : []
   const encerrada = !!(osAtual?.op_date_close || osAtual?.op_date_cancel)
   const proximaEtapa =
     osAtual?.op_pk && !encerrada ? ETAPAS.find((_, indice) => situacaoEtapa(concluidas, indice) === 'confirmar') : undefined
-  // osAtrasada olha a etapa calculada na lista; aqui confere também os
-  // eventos já carregados (acabou de iniciar nesta tela = não atrasa mais).
+  // Iniciada nesta tela não conta como atraso.
   const atrasada = !!osAtual && osAtrasada(osAtual) && !concluidas[1]
   const rota = osAtual ? linkRota(endereco, osAtual) : null
   const telefonesOs = separarTelefones(telefone).filter((n) => linkLigar(n))
@@ -571,7 +518,7 @@ function DetalheOrdemServicoConteudo() {
         )}
 
         {!carregando && erro && (
-          <EstadoErro mensagem={erro} cor={CORES.suporte} onTentarDeNovo={carregar} />
+          <EstadoErro mensagem={erro} onTentarDeNovo={carregar} />
         )}
 
         {!carregando && !erro && !osAtual && (
@@ -751,7 +698,6 @@ function DetalheOrdemServicoConteudo() {
                   {(endereco?.address_zipcode ?? osAtual.address_zipcode) && (
                     <p className="detalhe-ordem-linha">CEP: {formatarCep(endereco?.address_zipcode ?? osAtual.address_zipcode)}</p>
                   )}
-                  {/* Cartão grande: ações com texto dividindo a largura (Editar, mapa). A rota fica na grade do topo. */}
                   {endereco?.address_pk && (
                     <div className="acoes-cartao">
                       {endereco?.address_pk && (
@@ -886,7 +832,6 @@ function DetalheOrdemServicoConteudo() {
                   <div className="detalhe-ordem-anexo-botoes">
                     <button
                       className="botao botao-primario"
-                      style={{ '--botao-cor': CORES.suporte } as CSSProperties}
                       disabled={enviandoAnexo}
                       onClick={() => inputCameraRef.current?.click()}
                     >
@@ -894,7 +839,6 @@ function DetalheOrdemServicoConteudo() {
                     </button>
                     <button aria-busy={enviandoAnexo}
                       className="botao botao-secundario"
-                      style={{ '--botao-cor': CORES.suporte } as CSSProperties}
                       disabled={enviandoAnexo}
                       onClick={() => inputArquivoRef.current?.click()}
                     >
@@ -973,10 +917,7 @@ function DetalheOrdemServicoConteudo() {
                       const data = dataEtapa(eventos, osAtual, etapa)
                       const concluida = concluidas[indice]
                       const situacao = situacaoEtapa(concluidas, indice)
-                      // Texto explica por que o botão está bloqueado, em vez de
-                      // só desabilitar sem dizer nada: a sequência é obrigatória
-                      // nos dois sentidos (marcar em ordem, desfazer em ordem
-                      // reversa).
+                      // Explica por que a etapa está bloqueada.
                       let subtitulo: string
                       if (concluida && data) {
                         subtitulo = formatarDataHora(data)
@@ -1016,7 +957,6 @@ function DetalheOrdemServicoConteudo() {
                 <button
                   type="button"
                   className="botao botao-primario botao-bloco detalhe-ordem-barra-botao"
-                  style={{ '--botao-cor': CORES.suporte } as CSSProperties}
                   onClick={() => {
                     // Finalizar: volta o rascunho salvo neste aparelho, se houver.
                     if (proximaEtapa.chave === 'finalizar' && !observacaoEtapa.trim() && osAtual?.op_pk) {
@@ -1079,7 +1019,6 @@ function DetalheOrdemServicoConteudo() {
                 </button>
                 <button aria-busy={executandoEtapa}
                   className="botao botao-primario"
-                  style={{ '--botao-cor': CORES.suporte } as CSSProperties}
                   disabled={executandoEtapa}
                   onClick={confirmarEtapa}
                 >
@@ -1093,7 +1032,6 @@ function DetalheOrdemServicoConteudo() {
         {enderecoEditando && (
           <ModalEditarEndereco
             endereco={enderecoEditando}
-            corDestaque={CORES.suporte}
             abaInicial={abaEnderecoInicial}
             onFechar={() => setEnderecoEditando(null)}
             onSalvo={(atualizado) => {
@@ -1108,11 +1046,7 @@ function DetalheOrdemServicoConteudo() {
   )
 }
 
-/**
- * Uma instância por OS: trocar de OS sem sair da tela (aviso de OS,
- * link, busca) recomeça do zero — sem anexos, checklist, textos ou janelas
- * da anterior presos na tela.
- */
+/** key por OS: trocar de OS recomeça o estado. */
 export default function DetalheOrdemServico() {
   const { ticketPk } = useParams<{ ticketPk: string }>()
   return <DetalheOrdemServicoConteudo key={ticketPk} />

@@ -3,12 +3,7 @@ import FaixaSinal, { ROTULO } from '../../components/FaixaSinal'
 import { nivelSinalOnu, type NivelSinal } from '../../utils/formatacao'
 import { nivelSinalOlt, TEXTO_SINAL } from './formato'
 
-/**
- * Sinal óptico da ONU e, quando informado, o da OLT para esta ONU — num
- * cartão só, lado a lado (antes eram dois blocos grandes, um embaixo do
- * outro). O selo (Bom/Limite/Crítico) mostra o nível; os cortes de cada
- * lado são os de sempre (ONU −24/−22, OLT −27/−25).
- */
+/** Sinal da ONU e da OLT lado a lado (ONU −24/−22, OLT −27/−25). */
 export default function CardsSinal({ onu }: { onu: OnuDto }) {
   const temOlt = onu.olt_omddm_rx_power != null || onu.olt_omddm_tx_power != null
   return (

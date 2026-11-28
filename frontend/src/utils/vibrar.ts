@@ -1,8 +1,4 @@
-/**
- * Vibração curta de retorno (Vibration API). Funciona no Android; o Safari
- * do iPhone não tem a API e a chamada vira nada, sem erro. Respeita
- * "reduzir movimento" do sistema.
- */
+/** Vibração curta (Android); respeita "reduzir movimento". */
 const PADROES = { leve: 10, sucesso: 18, erro: [30, 60, 30] } as const
 
 export type TipoVibracao = keyof typeof PADROES

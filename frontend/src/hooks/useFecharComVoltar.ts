@@ -1,16 +1,7 @@
 import { useEffect, useRef } from 'react'
 
-/**
- * Botão/gesto "Voltar" do celular fecha a janela aberta (modal, folha,
- * câmera), como num app nativo, em vez de sair da tela por baixo dela.
- *
- * Enquanto houver janela aberta, o histórico tem uma entrada extra marcada
- * (mesma URL, preservando o estado do roteador). "Voltar" consome essa
- * entrada e fecha só a janela de cima; se ainda houver outra aberta, a
- * entrada é recolocada. Fechando pelo botão da própria janela, a entrada é
- * retirada (history.back) — com atraso de um ciclo, para o caso de outra
- * janela abrir logo em seguida (ex.: Configurações → "Sair" → confirmação).
- */
+/** Voltar do celular fecha a janela de cima. Cada janela aberta deixa uma entrada extra no histórico; fechar pelo botão
+   a retira um ciclo depois. */
 interface JanelaAberta {
   fechar: () => void
   fechadaPeloVoltar: boolean

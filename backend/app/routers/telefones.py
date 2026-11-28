@@ -29,10 +29,7 @@ class NovoTelefonePayload(BaseModel):
 async def criar_telefone(
     payload: NovoTelefonePayload, request: Request, ctx: AuthContext = Depends(get_auth_context)
 ) -> dict[str, Any]:
-    # Defaults do formulário "Nova Entrada" do painel: SVA habilitado,
-    # status habilitado, válido, e os 4 tipos de contato marcados
-    # (bitmask 15). O técnico só informa identificação e número; o resto
-    # seria ruído numa tela de campo.
+    # Padrões do formulário do painel (SVA e status habilitados, tipos 15).
     campos = {
         "client_pk": payload.client_pk,
         "phone_identification": payload.phone_identification,
@@ -58,12 +55,7 @@ async def criar_telefone(
 
 
 class TelefonePayload(BaseModel):
-    # Telefone é recurso próprio do Controllr (/controllrctl/phone/*), não
-    # um campo solto do cliente — client_phones (client/list) é só um
-    # resumo "Rótulo#-#número" montado a partir desses registros. O
-    # update exige o registro completo mesmo quando só o número muda; o
-    # técnico edita apenas o número na tela, os demais valores já
-    # carregados são reenviados como estavam.
+    # phone/update exige o registro completo; o técnico edita só o número.
     client_pk: int | None = None
     phone_identification: str | None = None
     phone_number: str | None = None

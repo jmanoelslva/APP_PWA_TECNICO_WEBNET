@@ -38,12 +38,7 @@ function LocalDoTecnico({ local }: { local: EventoAuditoria['local'] }) {
   )
 }
 
-/**
- * Quem fez o quê, de qual IP: ações que mexem no cadastro e no equipamento
- * do cliente (ONU, Wi-Fi, acesso ao roteador, CTO, endereço, telefone, OS,
- * liberação financeira) e as entradas no app. Só
- * para os usuários liberados em AUDITORIA_USUARIOS no servidor.
- */
+/** Quem fez o quê, de qual IP. Só para AUDITORIA_USUARIOS. */
 
 const ACOES: { valor: string; rotulo: string; icone: IconType; cor: string }[] = [
   { valor: 'onu.remover', rotulo: 'Removeu ONU', icone: LuTrash2, cor: CORES.erro },
@@ -78,9 +73,7 @@ const POR_ACAO = Object.fromEntries(ACOES.map((a) => [a.valor, a]))
 // Ações que apagam algo: borda vermelha no cartão.
 const GRAVES = new Set(['onu.remover', 'endereco.excluir', 'os.cancelar'])
 
-// Tipo de ação numa lista agrupada (antes eram 11 botões em várias
-// linhas). O backend filtra pelo começo do nome da ação, então "onu." pega
-// todas da ONU e "endereco." criar, editar e excluir de uma vez.
+// O backend filtra pelo prefixo da ação ("onu." pega todas da ONU).
 const GRUPOS_ACAO: { grupo: string; opcoes: { valor: string; rotulo: string }[] }[] = [
   {
     grupo: 'ONU',
@@ -190,8 +183,7 @@ export default function Auditoria() {
     }
   }, [filtro, limite, recarga])
 
-  // Tudo filtra sozinho (sem botão "Filtrar"): período e ação na hora,
-  // técnico depois que para de digitar.
+  // Filtra na hora; técnico com debounce.
   function mudarFiltro(parcial: Partial<typeof FILTRO_VAZIO>) {
     setLimite(PASSO)
     setFiltro((f) => ({ ...f, ...parcial }))
@@ -328,7 +320,7 @@ export default function Auditoria() {
             <LidoHa momento={atualizadoEm} prefixo="Atualizado" />
           </p>
         )}
-        {erro && <EstadoErro mensagem={erro} cor={CORES.ferramentas} onTentarDeNovo={() => setRecarga((n) => n + 1)} />}
+        {erro && <EstadoErro mensagem={erro} onTentarDeNovo={() => setRecarga((n) => n + 1)} />}
         {!erro && carregando && !dias && (
           <div className="auditoria-item">
             <Skeleton width="60%" height={14} />
@@ -409,7 +401,6 @@ export default function Auditoria() {
         {!erro && mais && (
           <button
             className="botao botao-secundario botao-bloco"
-            style={{ '--botao-cor': CORES.ferramentas } as CSSProperties}
             onClick={() => setLimite((l) => l + PASSO)}
             disabled={carregando}
           >

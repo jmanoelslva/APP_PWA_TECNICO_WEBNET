@@ -7,8 +7,7 @@
   flex-wrap: wrap;
   align-items: flex-start;
   gap: 12px;
-  /* De borda a borda (anula o recuo de .home-conteudo), com espaço embaixo
-     para a busca subir por cima da faixa. */
+  /* Borda a borda, com espaço para a busca sobrepor. */
   margin: -24px -20px 0;
   padding: calc(28px + env(safe-area-inset-top, 0px)) 20px 48px;
   border-radius: 0;
@@ -258,8 +257,6 @@
   text-decoration: none;
 }
 
-/* Os três números em cartão claro sólido, com o número na cor da marca
-   (Abertas e Atrasadas ainda abrem a lista ao tocar). */
 .home-numeros .home-numero {
   background: var(--cor-superficie);
   color: var(--cor-texto);
@@ -299,14 +296,12 @@
   box-shadow: none;
 }
 
-/* Modo sol: a faixa fica branca — o avatar translúcido com letras brancas
-   sumia. Círculo cheio na cor da marca. */
+/* Modo sol: avatar em círculo cheio na cor da marca. */
 :root[data-sol='1'] .home-avatar {
   background: var(--cor-primaria-escura);
   border-color: var(--cor-primaria-escura);
   color: var(--cor-branco-fixo);
 }
-
 
 .home-progresso {
   flex: 1 1 100%;
@@ -346,10 +341,7 @@
   background: var(--cor-sucesso);
 }
 
-
-
-/* Atalhos em lista (como Ferramentas e Configurações): ícone, nome, uma
-   informação útil e seta — fica igual com 3 ou 4 itens. */
+/* Atalhos em lista: ícone, nome, informação e seta. */
 .home-atalhos {
   display: flex;
   flex-direction: column;
@@ -419,8 +411,6 @@
   font-weight: 700;
 }
 
-/* "Continuar atendimento" (components/ContinuarAtendimento): contorno da
-   marca para se destacar dos atalhos comuns. */
 .home-continuar {
   margin-bottom: 20px;
   box-shadow: 0 0 0 2px var(--cor-primaria);

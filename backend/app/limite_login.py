@@ -1,26 +1,4 @@
-"""
-Limite de tentativas de login erradas.
-
-O /auth/login repassa usuário e senha ao Controllr; sem limite, dá para
-testar senhas dos técnicos à vontade pelo app. Dois contadores:
-
-- par IP + usuário (LOGIN_TENTATIVAS_PAR): quem erra a senha de um usuário
-  num aparelho é bloqueado só ali — de outro IP, o dono da conta continua
-  entrando. Antes o bloqueio era só por usuário, e qualquer pessoa que
-  soubesse o login de um técnico podia travar a conta dele de propósito.
-- IP (LOGIN_TENTATIVAS_IP, mais alto): segura quem testa vários usuários
-  do mesmo lugar. Alto o bastante para técnicos atrás do mesmo IP (CGNAT
-  da operadora, escritório).
-
-- usuário (LOGIN_TENTATIVAS_USUARIO, o mais alto): soma de todos os IPs,
-  para quem troca de endereço a cada tentativa.
-
-IPv6 conta pelo /64: o celular troca de endereço dentro do mesmo prefixo
-e, contado por endereço exato, cada troca zerava o bloqueio.
-
-Em memória: reiniciar o serviço zera os contadores. Chaves sem falha
-recente são apagadas na limpeza periódica (_falhas não cresce sem fim).
-"""
+"""Limite de logins errados, em memória: por IP+usuário, por IP e por usuário. IPv6 conta pelo /64."""
 
 import ipaddress
 import threading
@@ -93,7 +71,6 @@ def falhou(ip: str, usuario: str) -> None:
 
 
 def acertou(ip: str, usuario: str) -> None:
-    # Só zera o par: um login certo não pode apagar as tentativas que alguém
-    # fez com outros usuários a partir do mesmo IP.
+    # Login certo zera só o par IP+usuário.
     with _lock:
         _falhas.pop(_chave_par(ip, usuario), None)

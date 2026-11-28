@@ -19,7 +19,7 @@ export function formatarDataHora(data: string | null | undefined): string {
   return data
 }
 
-/** "YYYY-MM-DD HH:mm:ss" → "DD/MM/YYYY HH:mm:ss" — com segundos, para eventos que exigem mais precisão (ex: última autenticação, histórico de conexão). */
+/** Com segundos. */
 export function formatarDataHoraSegundos(data: string | null | undefined): string {
   if (!data) return ''
   const partes = data.split(' ')
@@ -31,10 +31,7 @@ export function formatarDataHoraSegundos(data: string | null | undefined): strin
   return data
 }
 
-/**
- * "YYYY-MM-DD HH:mm:ss" do Controllr (horário local) → instante em ms.
- * Vazio, data zerada ("0000-00-00…") ou inválida → null.
- */
+/** Data do Controllr → ms; vazia, zerada ou inválida → null. */
 export function instanteDoServidor(data: string | null | undefined): number | null {
   if (!data) return null
   const m = data.match(/^(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{2}):(\d{2})(?::(\d{2}))?)?/)
@@ -54,10 +51,7 @@ export function tempoRelativo(instante: number, agora: number = Date.now()): str
   return `há ${dias} ${dias === 1 ? 'dia' : 'dias'}`
 }
 
-/**
- * Padrão do app para "quando aconteceu": relativo e absoluto juntos —
- * "há 3 h · 05/11/2026 19:25". Data vazia/zerada → "".
- */
+/** "há 3 h · 05/11/2026 19:25"; vazia → "". */
 export function quandoFoi(data: string | null | undefined, agora: number = Date.now()): string {
   const instante = instanteDoServidor(data)
   if (instante == null) return ''
@@ -68,11 +62,6 @@ export function quandoFoi(data: string | null | undefined, agora: number = Date.
 export function dataParaFormatoServidor(data: Date): string {
   const par = (n: number) => String(n).padStart(2, '0')
   return `${data.getFullYear()}-${par(data.getMonth() + 1)}-${par(data.getDate())} ${par(data.getHours())}:${par(data.getMinutes())}:${par(data.getSeconds())}`
-}
-
-/** Mesmo formato acima, carimbado com o instante atual — usado para mensagens otimistas. */
-export function agoraNoFormatoDoServidor(): string {
-  return dataParaFormatoServidor(new Date())
 }
 
 /** Mapeamento oficial de contract_status, doc do Controllr. */
@@ -90,11 +79,7 @@ export function formatarStatusContrato(valor: number | string | null | undefined
   return ROTULOS_STATUS_CONTRATO[Number(valor)] ?? String(valor)
 }
 
-/**
- * client_phones vem no formato "Rótulo#-#número", às vezes múltiplos
- * separados por vírgula (ex: "Celular#-#82996267665,Comercial#-#...").
- * Aqui só o(s) número(s) interessa(m), sem o rótulo.
- */
+/** "Rótulo#-#número", às vezes vários por vírgula: só os números. */
 export function extrairTelefones(raw: string | null | undefined): string | null {
   if (!raw) return null
   const numeros = raw
@@ -114,24 +99,14 @@ export const OPCOES_CRIPTOGRAFIA_WIFI: Array<{ valor: number; rotulo: string }> 
   { valor: 3, rotulo: 'EAP' },
 ]
 
-/**
- * Um campo só decide sozinho o que foi digitado, em vez de pedir para o
- * técnico escolher entre nome/contrato/documento. Números (com ou sem a
- * máscara de CPF/CNPJ) buscam como trecho do documento — igual ao painel
- * do Controllr — e também como número de contrato, já que "026906" pode
- * ser qualquer um dos dois; CPF/CNPJ completo (11 ou 14 dígitos) busca só
- * documento. Qualquer coisa com letra vira busca por nome. Usado tanto na
- * busca completa (BuscaCliente.tsx) quanto no combobox rápido da Home.
- */
+/** Detecta o tipo: números buscam documento (trecho) e contrato; 11 ou 14 dígitos só documento; com letra, nome. */
 export function detectarTipoBusca(valor: string): { doc?: string; contrato?: string; nome?: string } {
   const termo = valor.trim()
   const somenteDigitos = termo.replace(/\D/g, '')
-  // Números com a máscara de CPF/CNPJ (pontos, traço, barra, espaço) ainda
-  // são número — antes "123.456.789-00" virava busca por nome.
+  // Máscara de CPF/CNPJ ainda é número.
   if (somenteDigitos && /^[\d.\-/\s]+$/.test(termo)) {
     if (somenteDigitos.length === 11 || somenteDigitos.length === 14) return { doc: somenteDigitos }
-    // Trecho curto de documento traria clientes demais: abaixo de 4 dígitos,
-    // só contrato. Texto, não Number(): contrato pode ter zero à esquerda.
+    // Menos de 4 dígitos: só contrato (texto, mantém zero à esquerda).
     if (somenteDigitos.length < 4) return { contrato: somenteDigitos }
     return { doc: somenteDigitos, contrato: somenteDigitos }
   }
@@ -147,11 +122,7 @@ export function iniciais(usuario: string | undefined): string {
 
 export type NivelSinal = 'boa' | 'alerta' | 'critica' | 'desconhecida'
 
-/**
- * Faixas de sinal óptico (dBm) da ONU, calibradas para esta operação —
- * não é uma norma GPON genérica (ver também OnuStatus.tsx, que usa a
- * mesma faixa para OLT com cortes diferentes).
- */
+/** Faixa da ONU desta operação (OLT em pages/onu/formato.ts). */
 export function nivelSinalOnu(rx: number | null | undefined): NivelSinal {
   if (rx == null) return 'desconhecida'
   if (rx >= -22) return 'boa'
@@ -159,7 +130,7 @@ export function nivelSinalOnu(rx: number | null | undefined): NivelSinal {
   return 'critica'
 }
 
-/** Valor monetário (number ou string do Controllr) → "1.234,56", sem o "R$" (quem exibe decide o prefixo). */
+/** "1.234,56", sem R$. */
 export function formatarMoeda(valor: number | string | null | undefined): string {
   if (valor == null || valor === '') return '—'
   const numero = typeof valor === 'string' ? Number(valor.replace(',', '.')) : valor
@@ -209,11 +180,7 @@ export function linkLigar(numero: string | null | undefined): string | null {
   return d ? `tel:${d}` : null
 }
 
-/**
- * Link do WhatsApp (wa.me) — só para celular: DDD + 9 dígitos começando em 9,
- * ou o formato antigo, DDD + 8 dígitos começando em 6 a 9 (celular cadastrado
- * antes do nono dígito: ganha o 9 na frente). Fixo (começa em 2 a 5) não tem.
- */
+/** wa.me só para celular (9 dígitos com 9, ou 8 dígitos de 6 a 9, que ganha o 9). */
 export function linkWhatsapp(numero: string | null | undefined): string | null {
   const d = telefoneNacional(numero)
   if (d && d.length === 11 && d[2] === '9') return `https://wa.me/55${d}`
@@ -221,10 +188,7 @@ export function linkWhatsapp(numero: string | null | undefined): string | null {
   return null
 }
 
-/**
- * Separa um texto com mais de um número ("79999887766 / 7932221100",
- * "Celular#-#7999...,Fixo#-#7932...", "... ou ...") em números soltos.
- */
+/** Separa vários números num texto. */
 export function separarTelefones(texto: string | null | undefined): string[] {
   if (!texto) return []
   return texto

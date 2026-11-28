@@ -17,13 +17,9 @@ export function lerAbaSalva<T extends string>(chaveArmazenamento: string, abas: 
   }
 }
 
-/**
- * Aba escolhida numa tela, lembrada enquanto o app estiver aberto: troca de
- * cliente/OS/ONU e continua na mesma parte.
- */
+/** Aba lembrada enquanto o app está aberto. */
 export function useAbaLembrada<T extends string>(chaveArmazenamento: string, abas: Aba<T>[]): [T, (nova: T) => void] {
-  // "?aba=cto" no endereço abre direto nessa aba (atalhos do "Antes de
-  // finalizar" da OS) e passa a ser a lembrada.
+  // "?aba=" abre direto nessa aba e passa a ser a lembrada.
   const [aba, setAba] = useState<T>(() => {
     const pedida = new URLSearchParams(window.location.search).get('aba')
     const valida = abas.find((item) => item.chave === pedida)
@@ -46,11 +42,7 @@ export function useAbaLembrada<T extends string>(chaveArmazenamento: string, aba
   return [aba, escolher]
 }
 
-/**
- * Abas de uma tela (Conexão, OS, ONU, Cliente): trilho que gruda no topo ao
- * rolar, com a aba ativa em destaque no laranja da marca (igual em todas as
- * telas; a cor de área fica só no ícone do cabeçalho).
- */
+/** Trilho de abas fixo no topo, aba ativa no laranja da marca. */
 export default function Abas<T extends string>({
   abas,
   ativa,

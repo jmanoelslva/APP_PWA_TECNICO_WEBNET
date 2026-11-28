@@ -11,13 +11,7 @@ function lerPosicoes(): Record<string, number> {
   }
 }
 
-/**
- * Volta para a mesma altura da lista ao sair de um detalhe com "voltar";
- * tela nova (link) abre do topo. A posição fica por entrada do histórico
- * (location.key) e é anotada a cada rolagem — não na saída, quando a tela
- * nova já trocou a altura da página. Como as listas chegam depois
- * (consulta ao servidor), tenta por até 2 s até a página ter altura.
- */
+/** Restaura a rolagem por entrada do histórico ao voltar; tela nova abre no topo. Tenta por até 2 s. */
 export default function RestaurarRolagem() {
   const location = useLocation()
   const tipo = useNavigationType()

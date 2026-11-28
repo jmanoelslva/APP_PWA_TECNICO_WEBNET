@@ -1,17 +1,11 @@
-import { useState, type CSSProperties } from 'react'
+import { useState } from 'react'
 import { LuEye, LuEyeOff, LuSave } from 'react-icons/lu'
 import { ApiError, atualizarWifiCpe, type CpeDto } from '../../api/client'
 import { useToast } from '../../components/Toast/useToast'
-import { CORES } from '../../utils/cores'
 import { OPCOES_CRIPTOGRAFIA_WIFI } from '../../utils/formatacao'
 import CartaoConexao from './CartaoConexao'
 
-/**
- * cpe_wifi_encryption_type/password (doc oficial do Controllr; valores:
- * 0 Nenhum, 1 WEP, 2 WPA, 3 EAP). Com "Nenhum" não faz sentido ter senha —
- * o campo fica desabilitado e é limpo nesse caso. Pré-preenchido com o que
- * o sistema fornecer; só é enviado ao Controllr quando o técnico salvar.
- */
+/** Criptografia do Wi-Fi (0 Nenhum, 1 WEP, 2 WPA, 3 EAP). Nenhum = sem senha. */
 export default function CardWifi({
   cpe,
   onAtualizado,
@@ -20,8 +14,7 @@ export default function CardWifi({
   onAtualizado: (parcial: Partial<CpeDto>) => void
 }) {
   const { toast } = useToast()
-  // Sem "não informado" no seletor — assume Nenhum (0) até o técnico
-  // escolher outra coisa, para manter o estado igual ao que a tela mostra.
+  // Sem valor, assume Nenhum.
   const [wifiTipo, setWifiTipo] = useState(cpe.wifi_encryption_type != null ? String(cpe.wifi_encryption_type) : '0')
   const [wifiSenha, setWifiSenha] = useState(cpe.wifi_encryption_password ?? '')
   const [mostrarSenha, setMostrarSenha] = useState(false)
@@ -32,8 +25,6 @@ export default function CardWifi({
     if (!cpe.pk) return
     setSalvando(true)
     try {
-      // Tipo 0 (Nenhum) não tem senha — se a criptografia é "Nenhum", o
-      // Controllr não deve receber senha nenhuma.
       const senhaParaEnviar = semCriptografia ? '' : wifiSenha
       const tipo = wifiTipo.trim() ? Number(wifiTipo.trim()) : undefined
       await atualizarWifiCpe(cpe.pk, {
@@ -101,7 +92,6 @@ export default function CardWifi({
       </div>
       <button aria-busy={salvando}
         className="botao botao-secundario botao-pequeno botao-largo"
-        style={{ '--botao-cor': CORES.conexao } as CSSProperties}
         onClick={salvar}
         disabled={salvando}
       >

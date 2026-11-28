@@ -61,10 +61,17 @@
   color: var(--cor-texto-secundario);
 }
 
+.modal-cto-descricao {
+  height: auto;
+  padding: 12px 14px;
+  line-height: 1.4;
+  resize: none;
+}
+
 .modal-cto-nome {
   margin: 0;
-  font-family: var(--fonte-mono);
-  font-size: 14px;
+  font-size: 13px;
+  line-height: 1.45;
   font-weight: 600;
   color: var(--cor-texto);
 }

@@ -6,24 +6,17 @@ import { CORES, comAlpha } from '../utils/cores'
 import { idxHistorico, passoAba } from '../utils/navegacaoAbas'
 import './BottomNav.css'
 
-// Sem "Buscar" de propósito: a busca geral é o campo do topo da Home
-// (cliente, serial da ONU e PPPoE) — um item aqui só a repetia.
+// Sem "Buscar": a busca é o campo do Início.
 const ITENS = [
   { to: '/', icone: LuHouse, label: 'Início', fim: true },
   { to: '/suporte', icone: LuWrench, label: 'OS' },
   { to: '/conexao', icone: LuWifi, label: 'Conexão' },
   { to: '/onu', icone: LuCable, label: 'ONU' },
 ]
-// Sem "Sair" de propósito: já fica em Configurações (avatar da tela
-// inicial); aqui só repetia. A pill usa o total para calcular a largura
-// (ver BottomNav.css).
+// Sem "Sair": fica em Configurações. TOTAL_SLOTS dimensiona a pílula.
 const TOTAL_SLOTS = ITENS.length
 
-/**
- * Item marcado na barra. Telas fora das quatro abas marcam a aba de origem:
- * detalhe da OS fica em "OS"; cliente, mapa, offline, ferramentas e as
- * demais (abertas pelo Início ou pela busca dele) ficam em "Início".
- */
+/** Telas fora das abas marcam a origem: detalhe da OS em "OS", as demais em "Início". */
 export function itemMarcado(caminho: string): number {
   const direto = ITENS.findIndex((item) => (item.fim ? caminho === item.to : caminho.startsWith(item.to)))
   if (direto >= 0) return direto
@@ -32,9 +25,7 @@ export function itemMarcado(caminho: string): number {
   return 0
 }
 
-// Posição do Início no histórico (quando está por baixo da tela atual) e
-// aba a abrir depois de descer até ele. Fora do componente: a barra some
-// em algumas telas e volta a montar.
+// Posição do Início no histórico e aba pendente; fora do componente porque a barra remonta.
 let idxInicio: number | null = null
 let abaPendente: string | null = null
 

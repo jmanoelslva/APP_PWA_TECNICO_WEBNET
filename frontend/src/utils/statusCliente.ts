@@ -1,19 +1,11 @@
-/**
- * Selo único de status do cliente (topo das telas do cliente) e o "há X
- * min" das leituras feitas pelo app.
- */
+/** Selo de status do cliente e "há X min". */
 
 export type StatusCliente = 'verificando' | 'online' | 'offline' | 'bloqueado' | 'sem-cpe'
 
 // contract_status 4 = Bloqueado (ver ROTULOS_STATUS_CONTRATO em formatacao.ts).
 const CONTRATO_BLOQUEADO = 4
 
-/**
- * Bloqueado vem primeiro (cliente bloqueado ainda pode autenticar e cair
- * na página de aviso); depois online se qualquer conexão tiver sessão.
- * `sessoes`: uma entrada por CPE — true/false quando já consultou, null
- * enquanto consulta ou se a consulta falhou.
- */
+/** Bloqueado primeiro; online se alguma conexão tem sessão. null = consultando ou falhou. */
 export function statusDoCliente(entrada: {
   contratos: Array<{ contract_status?: number | string | null }>
   sessoes: Array<boolean | null>

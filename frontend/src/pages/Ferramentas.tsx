@@ -1,4 +1,4 @@
-import { useEffect, useState, type CSSProperties } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import type { IconType } from 'react-icons'
 import { LuActivity, LuCalculator, LuChevronRight, LuExternalLink, LuFileSearch, LuGauge, LuGlobe, LuHammer, LuNetwork, LuPlug, LuRadar, LuZap } from 'react-icons/lu'
@@ -50,10 +50,7 @@ export default function Ferramentas() {
   }, [])
   const [resultadoV4, setResultadoV4] = useState<MeuIpResponse | null>(null)
   const [resultadoV6, setResultadoV6] = useState<MeuIpResponse | null>(null)
-  // Só preenchido quando nem o IPv4 nem o IPv6 puderam ser descobertos
-  // direto pelo navegador (ex: CSP do servidor bloqueando a saída para
-  // api.ipify.org/api6.ipify.org) — nesse caso o único dado disponível é
-  // o IP que o próprio backend detectar da conexão, sem saber a versão.
+  // Só quando o navegador não descobriu IPv4 nem IPv6.
   const [resultadoGenerico, setResultadoGenerico] = useState<MeuIpResponse | null>(null)
   const [consultando, setConsultando] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
@@ -110,7 +107,6 @@ export default function Ferramentas() {
         <button
           type="button"
           className="botao botao-primario ferramentas-ip-botao"
-          style={{ '--botao-cor': CORES.ferramentas } as CSSProperties}
           onClick={consultar}
           disabled={consultando}
           aria-busy={consultando}

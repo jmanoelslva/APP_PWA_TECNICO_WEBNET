@@ -1,4 +1,4 @@
-import { lazy, Suspense, useRef, useState, type ChangeEvent, type CSSProperties } from 'react'
+import { lazy, Suspense, useRef, useState, type ChangeEvent } from 'react'
 import { LuExternalLink, LuLocateFixed, LuMapPin } from 'react-icons/lu'
 import { soDigitos } from '../utils/formatacao'
 import Abas, { type Aba } from './Abas'
@@ -15,11 +15,6 @@ import { useFecharComVoltar } from '../hooks/useFecharComVoltar'
 
 interface Props {
   endereco: EnderecoDto
-  // Cor de destaque do botão "Salvar" (token de CORES, ex: CORES.cliente) —
-  // cada tela que usa este modal (Detalhe do Cliente, Detalhe da OS) tem
-  // sua própria cor de identidade; sem isso o botão ficaria sempre com a
-  // cor do cliente, mesmo aberto a partir da tela da OS.
-  corDestaque?: string
   // Aba aberta ao entrar (ex.: "Marcar localização" abre direto na Localização).
   abaInicial?: AbaEndereco
   onFechar: () => void
@@ -56,7 +51,7 @@ const CAMPOS_EDITAVEIS: (keyof EnderecoDto)[] = [
   'address_siafi',
 ]
 
-export default function ModalEditarEndereco({ endereco, corDestaque, abaInicial = 'endereco', onFechar, onSalvo }: Props) {
+export default function ModalEditarEndereco({ endereco, abaInicial = 'endereco', onFechar, onSalvo }: Props) {
   const [form, setForm] = useState<EnderecoDto>(endereco)
   const [aba, setAba] = useState<AbaEndereco>(abaInicial)
   const [confirmandoDescarte, setConfirmandoDescarte] = useState(false)
@@ -66,8 +61,7 @@ export default function ModalEditarEndereco({ endereco, corDestaque, abaInicial 
 
   const alterado = CAMPOS_EDITAVEIS.some((chave) => (form[chave] ?? '') !== (endereco[chave] ?? ''))
 
-  // Fechar (Cancelar, toque fora, arrastar ou "Voltar" do celular) com
-  // alterações pede confirmação em vez de perder o que foi digitado.
+  // Fechar com alterações pede confirmação.
   function tentarFechar() {
     if (!alterado) {
       onFechar()
@@ -85,15 +79,12 @@ export default function ModalEditarEndereco({ endereco, corDestaque, abaInicial 
   const [capturandoLocalizacao, setCapturandoLocalizacao] = useState(false)
   const { toast } = useToast()
 
-  // Precisão (em metros) da última captura feita nesta janela; null quando
-  // a coordenada exibida veio do cadastro.
+  // null quando a coordenada veio do cadastro.
   const [precisaoM, setPrecisaoM] = useState<number | null>(null)
   // Melhor precisão até agora, enquanto a captura ainda está em andamento.
   const [precisaoParcialM, setPrecisaoParcialM] = useState<number | null>(null)
 
-  // O técnico está na casa do cliente: a posição dele é a do endereço.
-  // Usa a amostragem de alguns segundos (melhor leitura da janela) em vez de
-  // uma leitura única, para gravar a coordenada mais precisa possível.
+  // GPS do técnico na casa do cliente, melhor leitura da janela.
   async function capturarLocalizacaoAtual() {
     if (!navigator.geolocation) {
       toast('Este navegador não suporta captura de localização.')
@@ -127,10 +118,7 @@ export default function ModalEditarEndereco({ endereco, corDestaque, abaInicial 
     setSalvando(true)
     try {
       await atualizarEndereco(endereco.address_pk, {
-        // client_pk, address_zipcode, address_siafi e address_default são
-        // obrigatórios para o Controllr aceitar a atualização — não são
-        // editáveis nesta tela, então sempre reenvia o valor já carregado
-        // (form == endereco nesses campos).
+        // Obrigatórios no Controllr, reenviados como vieram.
         client_pk: form.client_pk,
         address_siafi: form.address_siafi,
         address_default: form.address_default,
@@ -153,9 +141,7 @@ export default function ModalEditarEndereco({ endereco, corDestaque, abaInicial 
     }
   }
 
-  // Com os 8 dígitos, preenche logradouro, bairro, cidade, UF e o código
-  // do município (address_siafi, exigido pelo Controllr). Logradouro e
-  // bairro só mudam se o CEP os informar (CEP geral de cidade vem sem).
+  // CEP completo preenche logradouro, bairro, cidade, UF e siafi (logradouro e bairro só se o CEP trouxer).
   async function aoMudarCep(e: ChangeEvent<HTMLInputElement>) {
     const digitos = soDigitos(e.target.value).slice(0, 8)
     setForm((atual) => ({ ...atual, address_zipcode: digitos }))
@@ -190,7 +176,6 @@ export default function ModalEditarEndereco({ endereco, corDestaque, abaInicial 
     }
   }
 
-  const estiloBotaoPrimario = corDestaque ? ({ '--botao-cor': corDestaque } as CSSProperties) : undefined
 
   return (
     <div className="modal-editar-endereco-fundo" onClick={tentarFechar}>
@@ -315,7 +300,6 @@ export default function ModalEditarEndereco({ endereco, corDestaque, abaInicial 
           <button
             type="button"
             className="botao botao-secundario modal-editar-endereco-capturar"
-            style={estiloBotaoPrimario}
             aria-busy={capturandoLocalizacao}
             disabled={capturandoLocalizacao}
             onClick={capturarLocalizacaoAtual}
@@ -350,7 +334,6 @@ export default function ModalEditarEndereco({ endereco, corDestaque, abaInicial 
               <button
                 aria-busy={salvando}
                 className="botao botao-primario"
-                style={estiloBotaoPrimario}
                 disabled={salvando || buscandoCep || capturandoLocalizacao}
                 onClick={salvar}
               >

@@ -11,15 +11,14 @@ interface ItemToast {
 
 const DURACAO_MS = 3500
 
-/** Toasts no estilo de app (em vez de window.alert()) — empilham no rodapé, com cor por tipo, e somem sozinhos. */
+/** Toasts empilhados no rodapé, somem sozinhos. */
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [itens, setItens] = useState<ItemToast[]>([])
   const proximoId = useRef(0)
 
   const toast = useCallback((mensagem: string, tipo: TipoToast = 'erro') => {
     const id = proximoId.current++
-    // Retorno físico junto do aviso: sucesso (salvou, copiou, confirmou)
-    // vibra curto; erro vibra duplo. "info" não vibra.
+    // Sucesso vibra curto, erro duplo, info não vibra.
     if (tipo === 'sucesso') vibrar('sucesso')
     else if (tipo === 'erro') vibrar('erro')
     setItens((atual) => [...atual, { id, mensagem, tipo }])

@@ -1,6 +1,4 @@
-/* Inter variável (pesos 100–900), só o subconjunto latino (cobre o
-   português), servida pelo próprio app e pré-cacheada pelo service worker:
-   abre sem esperar o Google Fonts. Licença: assets/fonts/Inter-LICENSE.txt. */
+/* Inter variável, subconjunto latino, local e pré-cacheada (licença em assets/fonts). */
 @font-face {
   font-family: 'Inter';
   font-style: normal;
@@ -9,9 +7,7 @@
   src: url('./assets/fonts/inter-latin.woff2') format('woff2');
 }
 
-/* IBM Plex Mono (500 e 600, subconjunto latino) para serial, MAC, PPPoE e
-   senha: separa 0/O e l/1/I. Também local e pré-cacheada.
-   Licença: assets/fonts/IBMPlexMono-LICENSE.txt. */
+/* IBM Plex Mono para serial, MAC, PPPoE e senha (local, pré-cacheada). */
 @font-face {
   font-family: 'IBM Plex Mono';
   font-style: normal;
@@ -29,8 +25,7 @@
 }
 
 :root {
-  /* Cor por FUNÇÃO do botão (não por tela): o mesmo botão tem a mesma cor
-     em todo o app. Fundo suave + ícone e texto na cor (ver .acao-* abaixo). */
+  /* Cor por função do botão, igual no app todo (ver .acao-*). */
   --funcao-contato: #15803d;
   --funcao-contato-fundo: #e7f5ec;
   --funcao-ir: #1d5fbf;
@@ -40,16 +35,11 @@
   --funcao-registro: #a33700;
   --funcao-registro-fundo: #fbede6;
   font-family: 'Inter', system-ui, 'Segoe UI', Roboto, sans-serif;
-  /* Algarismos de largura fixa: datas, IPs e consumo alinham em coluna e
-     não "pulam" quando o valor muda. */
   font-variant-numeric: tabular-nums;
   color-scheme: light dark;
   --fonte-mono: 'IBM Plex Mono', ui-monospace, Consolas, monospace;
 
-  /* Marca WebNet: azul petróleo do logotipo ("Net", #236085) para ação e
-     para a faixa do login/início — branco por cima com 6,8:1; azul claro
-     do logotipo (#009ee0) como variante clara. O verde do logotipo não
-     entra como cor de ação: confundiria com o verde de OS e de sucesso. */
+  /* Azul petróleo do logotipo (#236085) para ação e faixa, 6,8:1 com branco; #009ee0 como variante clara. Verde fica para OS e sucesso. */
   --cor-primaria: #236085;
   --cor-primaria-escura: #1b4c6a;
   --cor-primaria-clara: #009ee0;
@@ -62,23 +52,19 @@
   --cor-borda: #d5dae0;
   --cor-borda-suave: #e9edf1;
   --cor-borda-clara: #eef1f4;
-  /* Branco fixo — para texto/ícone sobre um fundo de cor sólida (botão
-     gradiente, badge, cabeçalho). NUNCA redefinido no bloco escuro. */
+  /* Branco fixo para texto sobre cor sólida; não muda no tema escuro. */
   --cor-branco-fixo: #ffffff;
 
   /* Texto */
   --cor-texto: #243642;
   --cor-texto-secundario: #586476;
-  /* Cinzas de apoio escurecidos para passar no contraste mínimo (WCAG AA,
-     4.5:1) sobre o branco e o fundo — #999 ficava ilegível sob sol. */
+  /* Cinzas no contraste WCAG AA. */
   --cor-texto-terciario: #5f6b7c;
   --cor-texto-fraco: #64707f;
   --cor-texto-desabilitado: #737f8e;
 
   /* Status/feedback */
-  /* Sucesso/erro/conexão/ONU escurecidos no claro para passar no contraste
-     (texto branco sobre selo: 4.5:1; ícone branco sobre fundo: 3:1) — sob
-     sol, os tons antigos sumiam. No escuro ficam os tons claros (abaixo). */
+  /* Tons escurecidos no claro para contraste ao sol. */
   --cor-sucesso: #2e7d32;
   --cor-sucesso-vivo: #20b957;
   --cor-alerta: #ff9800;
@@ -97,24 +83,16 @@
   /* Menu "OLTs" (Coletor de OLTs, opcional — ver hooks/useColetorOlt.ts). */
   --cor-olts: #7b5ea7;
 
-  /* Sombra dos cards — token à parte porque no escuro uma sombra preta
-     não aparece contra um fundo já escuro (ver bloco dark abaixo). */
-  /* Cartão "chapado" com borda fina (sombra some no sol e pesa no tema
-     escuro): o mesmo visual do Início, menu e filtros em todas as telas. */
+  /* Cartão chapado com borda fina. */
   --sombra-card: 0 0 0 1px var(--cor-borda);
 
-  /* Largura do conteúdo principal — um token só, em vez do mesmo
-     "max-width" repetido em cada página (100%, sem teto fixo). */
   --largura-conteudo: 100%;
 
-  /* Altura da barra de navegação do rodapé somada à área da linha de
-     gestos do iPhone (viewport-fit=cover no index.html) — usada por tudo
-     que gruda no rodapé acima dela (barra fixa da OS). */
+  /* Barra de baixo + área de gestos do iPhone. */
   --altura-nav: calc(64px + env(safe-area-inset-bottom, 0px));
 }
 
-/* Tema escuro — dirigido só pelo atributo data-theme no <html>, nunca
-   direto por @media (prefers-color-scheme) — ver src/utils/tema.ts. */
+/* Tema só por data-theme no <html> (ver utils/tema.ts). */
 :root[data-theme='light'] {
   color-scheme: light;
 }
@@ -148,8 +126,7 @@
   --cor-sucesso: #4caf50;
   --cor-erro: #f44336;
 
-  /* Acentos clareados só onde o tom original ficaria escuro demais como
-     TEXTO sobre um fundo já escuro (mesmo critério do app cliente). */
+  /* Acentos clareados para texto sobre fundo escuro. */
   --cor-suporte: #3ecb74;
   --cor-endereco: #8fa4c9;
   --cor-conexao: #4fd2e3;
@@ -160,10 +137,7 @@
   --cor-olts: #a88bd6;
 }
 
-/* Modo sol (alto contraste) — vale por cima do tema claro ou escuro
-   (ver src/utils/tema.ts): fundo branco puro, texto preto, nada de cinza
-   claro sobre branco, bordas visíveis e cores de área escurecidas para
-   continuarem legíveis com o sol batendo na tela. */
+/* Modo sol (alto contraste), por cima do tema claro ou escuro. */
 :root[data-sol='1'] {
   color-scheme: light;
   --funcao-contato: #0b5d2a;
@@ -207,8 +181,7 @@
   font-weight: 500;
 }
 
-/* Texto grande (Configurações → Tamanho do texto): amplia o app inteiro
-   por igual — os tamanhos estão em px, então rem não alcançaria tudo. */
+/* Texto grande: zoom no app inteiro (tamanhos em px). */
 :root[data-texto='grande'] body {
   zoom: 1.125;
 }
@@ -224,10 +197,7 @@
   box-sizing: border-box;
 }
 
-/* Campos e botões não herdam a fonte do app por padrão (caíam em Arial/
-   Roboto): herdam aqui, de uma vez para o app todo. */
-/* Texto de ajuda (placeholder) que não cabe termina em "…" em vez de
-   ser cortado no meio. */
+/* Campos herdam a fonte do app. */
 input {
   text-overflow: ellipsis;
 }
@@ -239,17 +209,14 @@ textarea {
   font-family: inherit;
 }
 
-/* 16px é o mínimo para o iPhone não ampliar a tela ao tocar no campo
-   (com 13–15px a tela ficava ampliada depois de digitar). Não usar
-   maximum-scale no viewport: o técnico precisa da pinça para ler MAC/serial. */
+/* 16px evita o zoom do iPhone ao focar. */
 input,
 select,
 textarea {
   font-size: 16px !important;
 }
 
-/* Sensação de app: sem mancha azul ao tocar, sem a página esticar no
-   topo/fim (o "puxar para atualizar" é do próprio app, PullToRefresh). */
+/* Sem realce ao tocar e sem esticar no topo/fim. */
 html {
   -webkit-tap-highlight-color: transparent;
 }
@@ -263,8 +230,7 @@ body {
   margin: 0;
   background: var(--cor-fundo);
   color: var(--cor-texto);
-  /* Texto do app não seleciona ao segurar (como num app nativo); só os
-     campos de entrada de dados continuam selecionáveis. */
+  /* Texto não seleciona ao segurar; só campos. */
   user-select: none;
   -webkit-user-select: none;
   -webkit-touch-callout: none;
@@ -276,21 +242,8 @@ img {
   -webkit-user-drag: none;
 }
 
-/* Janela aberta (modal, folha, câmera): a tela de trás não rola junto,
-   como num app nativo. */
-html:has(
-    .camera-foto,
-    .leitor-codigo-fundo,
-    .folha-config-fundo,
-    .modal-confirmar-logout-fundo,
-    .modal-editar-endereco-fundo,
-    .modal-instalar-ios-fundo,
-    .chamado-imagem-modal-fundo,
-    .detalhe-cliente-modal-fundo,
-    .detalhe-ordem-modal-fundo,
-    .financeiro-modal-fundo,
-    .onu-modal-fundo
-  ) {
+/* Janela aberta (*-fundo): a tela de trás não rola. */
+html:has([class$='-fundo'], [class*='-fundo ']) {
   overflow: hidden;
 }
 
@@ -303,8 +256,7 @@ textarea,
   -webkit-touch-callout: default;
 }
 
-/* Reserva espaço para o conteúdo não ficar escondido atrás da barra de
-   navegação fixa no rodapé, quando ela está presente na página. */
+/* Espaço para a barra de baixo. */
 body:has(.bottom-nav) {
   --altura-toast-base: var(--altura-nav);
   padding-bottom: var(--altura-nav);
@@ -352,12 +304,7 @@ a:active,
   }
 }
 
-/* Sistema de botão único — substitui as classes .xxx-btn-secundario/perigo/
-   primario que cada tela vinha duplicando com o próprio CSS (mesma
-   intenção, altura/raio levemente diferentes de tela para tela). Mesma
-   altura (44px) e raio (12px) em qualquer lugar do app; a cor do módulo
-   atual entra só no variante primário, via --botao-cor (ver uso em cada
-   tela). */
+/* Botão padrão do app: 44px de altura, raio 12px. */
 .botao {
   display: inline-flex;
   align-items: center;
@@ -372,8 +319,6 @@ a:active,
   font-weight: 700;
   cursor: pointer;
   white-space: nowrap;
-  /* Cobre o caso de ".botao" num <Link> (vira <a>) — sem isso, o
-     sublinhado padrão do navegador aparece por baixo do texto do botão. */
   text-decoration: none;
 }
 
@@ -388,9 +333,7 @@ a:active,
   font-size: 14px;
 }
 
-/* Ações no pé de um cartão grande (Editar, mapa, rota…): dividem a largura
-   em partes iguais e quebram linha quando não cabem. Ícone sem texto (lápis)
-   só em itens pequenos ou linhas de campo. */
+/* Ações no pé de cartão grande: partes iguais, quebram linha. Lápis só em itens pequenos. */
 .acoes-cartao {
   display: flex;
   flex-wrap: wrap;
@@ -406,15 +349,13 @@ a:active,
   white-space: nowrap;
 }
 
-/* Botão sozinho no pé de um cartão ou seção: largura cheia, em vez de
-   um botão pequeno solto no canto. */
+/* Botão sozinho em cartão: largura cheia. */
 .botao-largo {
   width: 100%;
   justify-content: center;
 }
 
-/* Botão carregando (aria-busy="true"): rodinha no lugar do ícone e sem
-   novo toque enquanto a ação não termina. */
+/* Carregando: rodinha e sem novo toque. */
 .botao[aria-busy='true'] {
   pointer-events: none;
 }
@@ -440,8 +381,7 @@ a:active,
   }
 }
 
-/* Campo padrão (input/select) do app: 48px de toque, letra 16px (o iPhone
-   não dá zoom ao focar), mesma borda e foco em todas as telas. */
+/* Campo padrão: 48px de toque, 16px de letra. */
 .campo {
   width: 100%;
   min-width: 0;
@@ -481,9 +421,7 @@ select.campo {
 .botao-primario {
   border-color: transparent;
   color: var(--cor-branco-fixo);
-  /* Uma cor só para agir: o laranja da marca em todas as telas. A variável
-     --botao-cor que as telas ainda passam não muda mais a cor (cor de área
-     fica só no ícone do cabeçalho). Verde/vermelho/amarelo = só estado. */
+  /* Ação sempre no laranja da marca; verde/vermelho/amarelo só para estado. */
   background: var(--cor-primaria-escura);
 }
 
@@ -494,8 +432,6 @@ select.campo {
   color: var(--cor-texto);
 }
 
-/* Preenchimento leve (6%) além do contorno vermelho — ajuda a diferenciar
-   de ".botao-secundario" num relance, sem parecer agressivo. */
 .botao-perigo {
   border-color: color-mix(in srgb, var(--cor-erro) 55%, transparent);
   background: color-mix(in srgb, var(--cor-erro) 6%, var(--cor-superficie));
@@ -508,24 +444,18 @@ select.campo {
   color: var(--cor-primaria);
 }
 
-/* Utilitário — botão ocupando a largura do container (ex.: "anexar
-   arquivo"), sem precisar de mais uma classe por tela para isso. */
 .botao-bloco {
   width: 100%;
 }
 
-/* Variante quadrada, sem padding horizontal — ícone sozinho, sem texto
-   (ex.: leitor de QR/busca num campo). flex-shrink: 0 pra não encolher
-   ao lado de um input flexível. */
+/* Só ícone, sem padding. */
 .botao-quadrado {
   flex-shrink: 0;
   width: 48px;
   padding: 0;
 }
 
-/* Botões de ícone dentro das linhas de dados (copiar, revelar senha,
-   editar, localizar no mapa): o desenho continua pequeno para não inflar
-   a linha, mas a área de toque vai a 48 px — dá para acertar de luva. */
+/* Ícones nas linhas de dados: desenho pequeno, toque de 48px. */
 .conexao-campo-valor button,
 .onu-campo-valor button,
 .botao-icone,
@@ -551,8 +481,7 @@ select.campo {
   transform: translate(-50%, -50%);
 }
 
-/* Transição entre telas — View Transitions API nativa (ver prop
-   "viewTransition" do react-router-dom nas páginas). */
+/* Transição entre telas (View Transitions). */
 @media (prefers-reduced-motion: no-preference) {
   ::view-transition-old(root) {
     animation: tela-sai 0.22s ease both;
@@ -563,8 +492,7 @@ select.campo {
   }
 }
 
-/* Barra do rodapé e avisos do topo ficam parados durante a troca de tela
-   (antes deslizavam junto com a página). */
+/* Barra de baixo e avisos parados na troca de tela. */
 .bottom-nav {
   view-transition-name: barra-inferior;
 }
@@ -578,9 +506,7 @@ select.campo {
   animation: none;
 }
 
-/* Como no Android/iOS: a tela nova entra inteira pela direita por cima da
-   anterior, que recua um pouco e escurece. (O voltar é só o do celular,
-   sem animação própria.) */
+/* Tela nova entra pela direita; a anterior recua e escurece. */
 @keyframes tela-sai {
   to {
     transform: translateX(-25%);
@@ -604,17 +530,11 @@ select.campo {
 
 /* --- Toque como app nativo ------------------------------------------------ */
 html {
-  /* Sem o realce do navegador ao tocar e sem zoom (pinça ou toque duplo)
-     na tela, como num app nativo — o iPhone ignora user-scalable=no do
-     viewport, por isso o touch-action também. O mapa da CTO (Leaflet) tem
-     touch-action próprio e faz a pinça por conta dele, então segue com
-     zoom. */
+  /* Sem realce e sem zoom (o iPhone ignora user-scalable=no). O Leaflet faz a própria pinça. */
   -webkit-tap-highlight-color: transparent;
   touch-action: pan-x pan-y;
 }
 
-/* Botões, abas, rótulos e títulos não selecionam texto ao segurar o dedo
-   (campos de texto e valores para copiar continuam selecionáveis). */
 button,
 [role='tab'],
 nav,
@@ -627,8 +547,7 @@ h3,
   user-select: none;
 }
 
-/* Botão "afunda" de leve ao tocar. `scale` (não transform) para não brigar
-   com elementos que já usam transform para se posicionar. */
+/* Botão afunda ao tocar (scale, não transform). */
 @media (pointer: coarse) {
   button,
   a,
@@ -652,11 +571,8 @@ h3,
   }
 }
 
-/* ---------------------------------------------------------------------
-   Grade de ações (OS, Cliente, Clientes Offline): uma linha só, colunas
-   iguais, ícone em cima e rótulo embaixo. Os botões de AcoesContato
-   (Ligar/WhatsApp) entram na mesma grade.
-   --------------------------------------------------------------------- */
+/* --------------------------------------------------------------------- Grade de ações (OS, Cliente, Offline): uma
+   linha, colunas iguais, ícone sobre rótulo. --------------------------------------------------------------------- */
 .grade-acoes {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(48px, 1fr));
@@ -668,8 +584,6 @@ h3,
   display: contents;
 }
 
-/* Na grade, cada botão cabe na sua coluna (AcoesContato fora da grade
-   usa min-width: max-content para dividir a largura do cartão). */
 .grade-acoes .acoes-contato-numero > * {
   flex: none;
   min-width: 0;
@@ -716,17 +630,14 @@ h3,
   color: var(--cor-whatsapp);
 }
 
-/* Botões de ação coloridos pela função: falar com o cliente (verde), ir até
-   o lugar (azul), rede do cliente (verde-azulado) e registros (laranja
-   escuro). Vale para grade de ações, Ligar/WhatsApp, atalhos do cliente,
-   botões de endereço, Minhas OS de hoje, rota da lista de OS e atalhos da OS. */
-:is(.grade-acao, .acoes-contato-botao, .detalhe-cliente-atalho, .botao, .minhas-os-acao, .minhas-os-vazio-link, .os-linha-rota, .pronto-fechar-acao, .detalhe-ordem-chip, .detalhe-ordem-mensagem):is(.acao-contato, .acao-ir, .acao-rede, .acao-registro) {
+/* Cor por função: contato verde, ir azul, rede verde-azulado, registro laranja escuro. */
+:is(.grade-acao, .acoes-contato-botao, .botao, .minhas-os-acao, .minhas-os-vazio-link, .os-linha-rota, .pronto-fechar-acao, .detalhe-ordem-chip, .detalhe-ordem-mensagem):is(.acao-contato, .acao-ir, .acao-rede, .acao-registro) {
   background: var(--acao-fundo);
   border-color: color-mix(in srgb, var(--acao-texto) 22%, transparent);
   color: var(--acao-texto);
 }
 
-:is(.grade-acao, .acoes-contato-botao, .detalhe-cliente-atalho, .botao, .minhas-os-acao, .minhas-os-vazio-link, .os-linha-rota, .pronto-fechar-acao, .detalhe-ordem-chip, .detalhe-ordem-mensagem):is(.acao-contato, .acao-ir, .acao-rede, .acao-registro) svg {
+:is(.grade-acao, .acoes-contato-botao, .botao, .minhas-os-acao, .minhas-os-vazio-link, .os-linha-rota, .pronto-fechar-acao, .detalhe-ordem-chip, .detalhe-ordem-mensagem):is(.acao-contato, .acao-ir, .acao-rede, .acao-registro) svg {
   color: var(--acao-texto);
 }
 
@@ -756,11 +667,8 @@ h3,
   cursor: default;
 }
 
-/* ---------------------------------------------------------------------
-   Botão só de ícone (ver ONU/conexão, editar): 32px de visual; a área de
-   toque de 48px vem da regra comum dos botões de ícone. Cor em
-   --botao-icone-cor.
-   --------------------------------------------------------------------- */
+/* --------------------------------------------------------------------- Botão só de ícone: 32px de desenho, 48px de
+   toque. Cor em --botao-icone-cor. --------------------------------------------------------------------- */
 .botao-icone {
   flex-shrink: 0;
   width: 32px;
@@ -790,8 +698,7 @@ h3,
   max-width: 100%;
 }
 
-/* Fica dentro de <strong> de linhas cujo "span" é o rótulo (cor clara,
-   caixa alta na grade do cliente): herda o estilo do valor. */
+/* Herda o estilo do valor dentro de <strong>. */
 .ip-com-acesso.ip-com-acesso,
 .ip-com-acesso .ip-com-acesso-texto {
   font: inherit;
@@ -821,8 +728,7 @@ h3,
   color: var(--cor-texto-terciario);
 }
 
-/* Item de lista em duas linhas: título forte e detalhe menor (buscas e
-   escolhas de cliente, ONU, PPPoE). */
+/* Item em duas linhas: título e detalhe. */
 .item-duas-linhas {
   display: flex;
   flex-direction: column;

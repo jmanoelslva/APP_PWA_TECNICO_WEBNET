@@ -9,12 +9,7 @@ export interface PosicaoAoVivo {
   precisaoM: number
 }
 
-/**
- * Posição do técnico em tempo real enquanto o componente está na tela —
- * o "Você" do mapa anda junto com ele, sem precisar tocar no botão de
- * localizar. Permissão negada ou GPS indisponível: fica null, em silêncio
- * (o botão de localizar continua mostrando o motivo).
- */
+/** GPS ao vivo enquanto o componente está na tela; sem permissão, null. */
 export function useLocalizacaoAoVivo(): PosicaoAoVivo | null {
   const [posicao, setPosicao] = useState<PosicaoAoVivo | null>(null)
   const ultimaRef = useRef<PosicaoAoVivo | null>(null)
@@ -28,8 +23,7 @@ export function useLocalizacaoAoVivo(): PosicaoAoVivo | null {
           lng: leitura.coords.longitude,
           precisaoM: leitura.coords.accuracy,
         }
-        // Parado, o GPS manda leituras quase iguais a cada segundo; cada uma
-        // re-renderizava a tela e o mapa à toa. Só atualiza quando muda de fato.
+        // Ignora o tremor do GPS parado.
         if (!mudouOSuficiente(ultimaRef.current, nova)) return
         ultimaRef.current = nova
         setPosicao(nova)
@@ -43,11 +37,7 @@ export function useLocalizacaoAoVivo(): PosicaoAoVivo | null {
   return posicao
 }
 
-// Limiares da atualização ao vivo. Precisão vem primeiro: qualquer leitura
-// mais precisa (1 m ou mais) é mostrada na hora; movimento de 3 m também.
-// Só o tremor do GPS parado (leituras quase iguais, sem ganho de precisão)
-// é ignorado. Piora da precisão aparece a partir de 5 m, para o círculo
-// não mentir quando o sinal cai.
+// Precisão melhor (≥1 m) ou movimento ≥3 m atualiza; piora só a partir de 5 m.
 export const MOVIMENTO_MINIMO_M = 3
 export const MELHORA_PRECISAO_MINIMA_M = 1
 export const PIORA_PRECISAO_MINIMA_M = 5
@@ -62,9 +52,7 @@ export function mudouOSuficiente(anterior: PosicaoAoVivo | null, nova: PosicaoAo
   )
 }
 
-// Fórmula de Haversine — distância em linha reta (metros) entre a
-// localização do técnico e a coordenada cadastrada da CTO. Suficiente
-// para sugerir/ordenar por proximidade; não precisa de rota real.
+// Haversine, em metros.
 export function distanciaMetros(lat1: number, lng1: number, lat2: number, lng2: number): number {
   const raioTerraM = 6371000
   const paraRad = (graus: number) => (graus * Math.PI) / 180
@@ -79,24 +67,13 @@ export function formatarDistancia(metros: number): string {
   return `${(metros / 1000).toFixed(1)} km`
 }
 
-// GPS urbano varia de ~5m (céu aberto) a 30m+ perto de muro/poste metálico
-// — um limiar fixo de metros ignora essa variação: auto-seleciona errado
-// quando o GPS está ruim e força confirmação manual à toa quando está
-// ótimo. Os limiares abaixo usam a própria precisão (accuracy, em metros)
-// relatada pelo GPS a cada leitura em vez de um número fixo.
+// Limiares pela precisão relatada, não por distância fixa.
 export const PRECISAO_MAXIMA_ACEITAVEL_M = 30
 export const MARGEM_COORDENADA_CTO_M = 5
-// Uma única leitura pode pegar o GPS no pior instante — amostra por
-// alguns segundos via watchPosition e fica com a leitura de menor
-// accuracy da janela, em vez da primeira que chegar. Em área urbana o
-// primeiro fix do GPS (com enableHighAccuracy, ou seja, rádio GPS em
-// vez de posição por rede) costuma levar bem mais que alguns segundos
-// — a janela precisa ser generosa o bastante pra isso, senão o técnico
-// só vê "não foi possível obter localização" e precisa tentar de novo.
+// Amostra a janela e fica com a leitura mais precisa (o 1º fix pode demorar).
 const JANELA_AMOSTRAGEM_LOCALIZACAO_MS = 10000
 
-// Abaixo disso o GPS do celular quase não melhora: esperar o resto da janela
-// só atrasa o técnico.
+// Abaixo disso o GPS quase não melhora.
 export const PRECISAO_SUFICIENTE_M = 5
 
 export interface OpcoesMelhorLocalizacao {
@@ -125,11 +102,7 @@ export function obterMelhorLocalizacao(opcoes: OpcoesMelhorLocalizacao = {}): Pr
       else reject(ultimoErro ?? new Error('Não foi possível obter a localização.'))
     }
 
-    // Sem "timeout" aqui (fica Infinity por padrão): quem decide quando
-    // parar de esperar é só o setTimeout externo abaixo — evita que o
-    // watchPosition erre por timeout individual bem no instante em que a
-    // janela ia fechar de qualquer forma, perdendo uma leitura que
-    // chegaria logo em seguida.
+    // Sem timeout próprio: quem encerra é o setTimeout da janela.
     const watchId = navigator.geolocation.watchPosition(
       (posicao) => {
         if (encerrado) return

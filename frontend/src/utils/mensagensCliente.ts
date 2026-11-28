@@ -1,9 +1,6 @@
 import { linkWhatsapp, separarTelefones } from './formatacao'
 
-/**
- * Mensagens prontas para o técnico avisar o cliente pelo WhatsApp (tela da
- * OS). Os textos ficam só aqui, para mudar sem mexer na tela.
- */
+/** Mensagens prontas de WhatsApp para o cliente. */
 export interface MensagemCliente {
   chave: string
   rotulo: string

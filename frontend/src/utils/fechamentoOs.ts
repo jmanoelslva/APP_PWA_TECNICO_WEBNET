@@ -30,11 +30,7 @@ function formatarRx(rx: number | undefined): string {
   return rx != null ? `${rx.toLocaleString('pt-BR')} dBm` : 'sem leitura'
 }
 
-/**
- * O que precisa estar certo para fechar a OS sem voltar ao cliente: ONU
- * registrada para ele, sinal na faixa, PPPoE conectado, CTO e porta
- * gravadas e coordenada do endereço.
- */
+/** Itens para fechar a OS sem voltar ao cliente. */
 export function verificarFechamento(d: DadosFechamento): ItemFechamento[] {
   const itens: ItemFechamento[] = []
 

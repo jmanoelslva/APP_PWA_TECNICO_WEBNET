@@ -1,4 +1,4 @@
-import { useEffect, useState, type CSSProperties } from 'react'
+import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { LuFilePlus, LuReceipt, LuWallet } from 'react-icons/lu'
 import { ApiError, criarObservacaoFatura, listarFaturas, type FaturaDto } from '../api/client'
@@ -39,9 +39,7 @@ export default function Financeiro() {
   const [carregando, setCarregando] = useState(true)
   const [erro, setErro] = useState<string | null>(null)
   const [atualizadoEm, setAtualizadoEm] = useState<number | null>(null)
-  // 403 do Controllr = técnico sem liberação de ACL para o financeiro —
-  // estado de permissão, não um erro para tentar de novo (ver
-  // backend/app/routers/financeiro.py).
+  // 403 = sem ACL do financeiro (não é erro).
   const [naoPermitido, setNaoPermitido] = useState(false)
   const [faturaObservando, setFaturaObservando] = useState<FaturaDto | null>(null)
 
@@ -100,7 +98,7 @@ export default function Financeiro() {
         )}
 
         {!carregando && !naoPermitido && erro && (
-          <EstadoErro mensagem={erro} cor={CORES.financeiro} onTentarDeNovo={carregar} />
+          <EstadoErro mensagem={erro} onTentarDeNovo={carregar} />
         )}
 
         {!carregando && !naoPermitido && !erro && faturas.length === 0 && (
@@ -256,7 +254,6 @@ function ModalObservacao({
           <button className="botao botao-secundario" onClick={onFechar}>Cancelar</button>
           <button aria-busy={salvando}
             className="botao botao-primario"
-            style={{ '--botao-cor': CORES.financeiro } as CSSProperties}
             disabled={salvando}
             onClick={salvar}
           >

@@ -1,4 +1,4 @@
-import { useState, type CSSProperties } from 'react'
+import { useState } from 'react'
 import { LuWifi } from 'react-icons/lu'
 import { CORES } from '../../utils/cores'
 import DeslizarParaConfirmar from '../../components/DeslizarParaConfirmar'
@@ -96,7 +96,6 @@ export function ModalRenomear({
           </button>
           <button aria-busy={salvando}
             className="botao botao-primario"
-            style={{ '--botao-cor': CORES.onu } as CSSProperties}
             disabled={salvando || !novoNome.trim()}
             onClick={() => onSalvar(novoNome.trim())}
           >

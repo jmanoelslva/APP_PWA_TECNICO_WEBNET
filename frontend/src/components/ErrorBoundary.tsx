@@ -9,11 +9,7 @@ interface State {
   comErro: boolean
 }
 
-/**
- * Rede de segurança contra erro de render não tratado em qualquer tela —
- * sem isso, uma exceção em qualquer componente derruba o app inteiro para
- * tela branca (só um error boundary de classe segura isso).
- */
+/** Erro de render vira tela de erro em vez de tela branca. */
 export default class ErrorBoundary extends Component<Props, State> {
   state: State = { comErro: false }
 

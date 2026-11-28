@@ -17,12 +17,7 @@ export const ROTULO: Record<Exclude<NivelSinal, 'desconhecida'>, string> = {
   critica: 'Crítico',
 }
 
-/**
- * Sinal óptico (RX) numa barra vermelho/amarelo/verde com marcador, para
- * ler de relance. Os cortes vêm de quem chama — ONU e OLT têm faixas
- * diferentes (nivelSinalOnu em utils/formatacao.ts, nivelSinalOlt em
- * pages/onu/formato.ts) — e o nível também, para nunca divergir do texto.
- */
+/** Sinal óptico em barra vermelho/amarelo/verde. Cortes e nível vêm de quem chama (ONU e OLT diferem). */
 export default function FaixaSinal({
   rx,
   nivel,
@@ -36,8 +31,7 @@ export default function FaixaSinal({
   corteCritico: number
   /** A partir disto é bom (ex.: -22 na ONU). */
   corteBom: number
-  /** Versão menor, sem escala e sem selo (quem usa mostra o selo no título),
-   *  para caber lado a lado na tela da ONU sem quebrar linha. */
+  /** Sem escala e sem selo, para caber lado a lado. */
   compacta?: boolean
 }) {
   if (rx == null || nivel === 'desconhecida') return null

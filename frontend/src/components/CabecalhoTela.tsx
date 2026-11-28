@@ -8,10 +8,7 @@ interface Props {
   titulo: string
 }
 
-/**
- * Cabeçalho padrão das telas internas: ícone num selo na cor da área + título
- * numa linha só, sem frase explicativa (a cor de área fica só neste ícone).
- */
+/** Ícone na cor da área + título, sem subtítulo. */
 export default function CabecalhoTela({ icone: Icone, cor, titulo }: Props) {
   return (
     <header className="cabecalho-tela">

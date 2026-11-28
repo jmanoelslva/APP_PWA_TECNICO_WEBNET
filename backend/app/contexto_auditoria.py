@@ -1,12 +1,4 @@
-"""
-O que a auditoria precisa saber do Controllr antes/depois de uma ação:
-nome do cliente, como o endereço ou o telefone estava. Busca no próprio
-Controllr (não confia no que a tela manda) e confere o número da linha — o
-Controllr ignora filtro que não entende e devolve qualquer registro.
-
-Falha aqui nunca impede a ação do técnico: sem resposta, a auditoria só fica
-com menos detalhe.
-"""
+"""Contexto da auditoria lido no Controllr (nome do cliente, estado anterior). Falha nunca bloqueia a ação."""
 
 import logging
 from typing import Any
@@ -94,8 +86,7 @@ def _igual(a: Any, b: Any) -> bool:
 
 
 def alteracoes(antes: dict[str, Any] | None, depois: dict[str, Any], campos: dict[str, str]) -> list[dict[str, Any]]:
-    """Só os campos enviados que mudaram, no formato que a tela de auditoria mostra.
-    Sem o "antes" (Controllr não respondeu) não dá para saber o que mudou: vazio."""
+    """Campos que mudaram, no formato da tela de auditoria. Sem "antes", vazio."""
     if not antes:
         return []
     lista = []

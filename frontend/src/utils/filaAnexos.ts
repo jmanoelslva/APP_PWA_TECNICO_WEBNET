@@ -1,11 +1,6 @@
 import { ApiError, enviarAnexoTicket, SessaoExpiradaError } from '../api/client'
 
-/**
- * Fila de anexos feitos sem internet: ficam guardados no aparelho
- * (IndexedDB) e saem sozinhos quando o sinal volta. Só anexos — etapas da
- * OS (iniciar, finalizar…) nunca entram na fila, porque dependem da ordem
- * conferida na hora com os dados do Controllr.
- */
+/** Anexos sem internet ficam no IndexedDB e saem quando o sinal volta. Etapas da OS nunca entram. */
 
 export interface AnexoNaFila {
   id: number
@@ -27,11 +22,7 @@ export interface DetalheEventoFila {
 const BANCO = 'webnet-tecnico-fila'
 const LOJA = 'anexos'
 
-/**
- * Depois de uma falha: sem rede ou sessão expirada, o item fica para a
- * próxima tentativa; recusado pelo servidor (arquivo grande, chamado
- * fechado…), não adianta repetir.
- */
+/** Sem rede ou sessão: mantém; recusado pelo servidor: descarta. */
 export function decidirAposFalha(erro: unknown): 'manter' | 'descartar' {
   if (erro instanceof SessaoExpiradaError) return 'manter'
   if (erro instanceof ApiError) return erro.status >= 500 ? 'manter' : 'descartar'

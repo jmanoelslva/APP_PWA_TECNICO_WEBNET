@@ -1,22 +1,16 @@
-import { useEffect, useState, type CSSProperties } from 'react'
+import { useEffect, useState } from 'react'
 import { LuChevronDown } from 'react-icons/lu'
 import { ApiError, buscarHistoricoSessoesCpe, type CpeDto, type SessaoHistoricoDto } from '../../api/client'
 import Skeleton from '../../components/Skeleton'
 import IpComAcesso from '../../components/IpComAcesso'
 import { useToast } from '../../components/Toast/useToast'
-import { CORES } from '../../utils/cores'
 import { formatarDataHoraSegundos, quandoFoi } from '../../utils/formatacao'
 import { calcularPeriodo, OPCOES_PERIODO, type PeriodoPreset } from '../../utils/periodos'
 import { formatarBytes, formatarDuracaoSegundos, rotuloEncerramento } from './sessao'
 
 const LIMITE_HISTORICO = 10
 
-/**
- * IP/MAC/última autenticação e o histórico de conexão
- * (aaa_ctl/session_history/list). Fica na aba "Histórico" da conexão e só
- * monta (e consulta) quando o técnico abre essa aba. Período padrão "Esse mês", mesmo padrão do painel Controllr (ver
- * CONTROLLR_API_NOTES.md, seção 7.5).
- */
+/** Aba Histórico: IP, MAC, autenticação e sessões. Período padrão "Esse mês". */
 export default function CardRede({ cpe }: { cpe: CpeDto }) {
   const { toast } = useToast()
   const [periodoPreset, setPeriodoPreset] = useState<PeriodoPreset>('esse_mes')
@@ -26,10 +20,7 @@ export default function CardRede({ cpe }: { cpe: CpeDto }) {
   const [carregandoHistorico, setCarregandoHistorico] = useState(false)
   const [temMaisHistorico, setTemMaisHistorico] = useState(false)
 
-  // "personalizado" só resolve quando as duas datas estiverem preenchidas;
-  // os demais presets são calculados aqui mesmo (ver utils/periodos.ts) —
-  // "desde_o_inicio" devolve null de propósito (sem faixa, mesmo
-  // comportamento do painel Controllr).
+  // "desde_o_inicio" = sem faixa; "personalizado" exige as duas datas.
   function periodoAtual(): { inicio: string; fim: string } | null {
     if (periodoPreset === 'personalizado') {
       if (!intervaloInicio || !intervaloFim) return null
@@ -173,7 +164,6 @@ export default function CardRede({ cpe }: { cpe: CpeDto }) {
       {temMaisHistorico && (
         <button
           className="botao botao-secundario botao-pequeno botao-largo"
-          style={{ '--botao-cor': CORES.conexao } as CSSProperties}
           onClick={() => carregarHistorico(Math.floor(historico.length / LIMITE_HISTORICO) + 1)}
           disabled={carregandoHistorico}
         >

@@ -1,8 +1,4 @@
-/**
- * Segurar o dedo num botão ou link abria o menu do navegador ("Abrir em nova
- * guia", "Copiar link", "Baixar imagem"). Como num app nativo, o menu só
- * continua nos campos de entrada de dados (colar, selecionar tudo).
- */
+/** Menu de segurar só em campos de texto. */
 
 const CAMPOS = 'input, textarea, [contenteditable]:not([contenteditable="false"])'
 

@@ -1,19 +1,12 @@
-import { useEffect, useState, type CSSProperties, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { LuSearch, LuWifi } from 'react-icons/lu'
 import { buscarCpe, type CpeDto } from '../../api/client'
-import { CORES } from '../../utils/cores'
 
-/**
- * Busca por usuário PPPoE — igual ao combobox de CTO: digita um pedaço do
- * usuário e a lista vai filtrando ao vivo (busca no backend com debounce),
- * sem precisar do nome exato nem apertar buscar. Só aparece quando a tela
- * abre sem conexão escolhida.
- */
+/** Busca ao vivo por usuário PPPoE (debounce no backend). */
 export default function BuscaUsuarioPppoe({
   onEscolher,
 }: {
-  // Guarda na URL (?username=... ou ?cpe_pk=...) — mesmo motivo da busca de
-  // cliente: sair para outra tela e voltar não deve perder a busca.
+  // Na URL, para voltar sem perder a busca.
   onEscolher: (parametros: { username: string } | { cpe_pk: string }) => void
 }) {
   const [busca, setBusca] = useState('')
@@ -22,8 +15,6 @@ export default function BuscaUsuarioPppoe({
   const [listaAberta, setListaAberta] = useState(false)
 
   useEffect(() => {
-    // Menos de 2 caracteres não busca — evita trazer metade da base de
-    // usuários a cada tecla.
     if (busca.trim().length < 2) {
       setResultados([])
       return
@@ -74,7 +65,6 @@ export default function BuscaUsuarioPppoe({
         <button
           type="submit"
           className="botao botao-secundario botao-quadrado"
-          style={{ '--botao-cor': CORES.conexao } as CSSProperties}
           aria-label="Buscar"
         >
           <LuSearch size={20} />

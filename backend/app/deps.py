@@ -13,12 +13,7 @@ logger = logging.getLogger(__name__)
 
 
 async def encerrar_sessao_controllr(username: str, cookie: str) -> None:
-    """
-    Encerra no Controllr a sessão criada no /login (POST /session/logout,
-    mesmo mecanismo do painel administrativo). Usado por /auth/logout e
-    por get_current_session quando a liveness detecta sessão inválida —
-    sem isso, a sessão fica presa ativa no Controllr até o lease expirar.
-    """
+    """Encerra no Controllr a sessão do /login; sem isso ela fica ativa até o lease expirar."""
     try:
         timeout = ClientTimeout(10)
         async with ClientSession() as http:
@@ -38,17 +33,7 @@ async def encerrar_sessao_controllr(username: str, cookie: str) -> None:
 
 
 async def _controllr_sessao_viva(cookie: str) -> bool:
-    """
-    Confirma se o cookie de sessão ainda é aceito pelo Controllr — sem
-    isso, uma sessão morta só seria percebida quando alguma chamada de
-    dado falhasse sozinha, com um erro genérico em vez do 401 que
-    redireciona pro login.
-
-    Usa /web_auth/acl_perm/list (lista as próprias permissões do
-    usuário) por precisar funcionar pra qualquer sessão válida,
-    independente do cargo — /sys/message/count, testado antes, é
-    restrito por ACL de módulo e retorna 403 pra técnicos comuns.
-    """
+    """Sessão ainda aceita? /web_auth/acl_perm/list funciona para qualquer cargo (/sys/message/count dá 403 a técnico)."""
     try:
         timeout = ClientTimeout(10)
         async with ClientSession() as http:
@@ -68,8 +53,7 @@ async def _controllr_sessao_viva(cookie: str) -> bool:
                 return bool(corpo.get("success", False))
     except Exception:
         logger.exception("Falha ao checar liveness da sessão do técnico no Controllr")
-        # Falha de rede/timeout não é sessão encerrada — não desloga por
-        # instabilidade, só tenta de novo na próxima checagem.
+        # Falha de rede não desloga.
         return True
 
 
@@ -80,8 +64,7 @@ async def get_current_session(
     if session is None:
         raise HTTPException(status_code=401, detail="Sessão expirada ou inexistente.")
 
-    # Throttlado — CONTROLLR_LIVENESS_CHECK_SECONDS é o quanto uma sessão
-    # encerrada no Controllr ainda funciona aqui antes de ser detectada.
+    # Checa no máximo a cada CONTROLLR_LIVENESS_CHECK_SECONDS.
     agora = time.time()
     if (agora - session.controllr_checked_at) > CONTROLLR_LIVENESS_CHECK_SECONDS:
         if not await _controllr_sessao_viva(session.controllr_cookie):

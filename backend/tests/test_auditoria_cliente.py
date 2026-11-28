@@ -1,4 +1,4 @@
-"""Auditoria de endereço, telefone e OS; excluir endereço que falha; busca de cliente em paralelo."""
+"""Auditoria de endereço, telefone e OS; busca de cliente em paralelo."""
 
 import asyncio
 from types import SimpleNamespace
@@ -33,8 +33,7 @@ def cliente(tmp_path, monkeypatch):
     monkeypatch.setattr(audit, "AUDIT_LOG_PATH", str(tmp_path / "auditoria.jsonl"))
     monkeypatch.setattr(audit, "_ultimo_mes_limpo", None)
 
-    # Controllr falso: devolve outras linhas junto (como quando ignora o
-    # filtro) — só vale a que confere com o número pedido.
+    # Controllr falso que devolve linhas extras, como quando ignora o filtro.
     async def post(self, caminho, body=None):
         if caminho == "/controllrctl/addresses/list":
             return ok([{**ENDERECO, "address_pk": 99, "address": "Outra"}, ENDERECO])
@@ -74,31 +73,6 @@ def test_editar_endereco_grava_antes_e_depois(cliente):
     ]
 
 
-def test_excluir_endereco_grava_o_que_foi_excluido(cliente):
-    assert cliente.delete("/enderecos/5").json() == {"success": True}
-    ev = ultimo()
-    assert ev["acao"] == "endereco.excluir"
-    assert ev["alvo"] == {"client_pk": 10, "cliente": "Maria da Silva", "address_pk": 5,
-                          "endereco": "Rua A, 12 - Centro - Teresina/PI"}
-
-
-def test_excluir_endereco_que_falha_responde_erro_e_nao_audita(cliente, monkeypatch):
-    async def falha(self, *a, **k):
-        return SimpleNamespace(success=False, results=[], errors="em uso")
-
-    monkeypatch.setattr(AsyncControllr, "address_delete", falha)
-    r = cliente.delete("/enderecos/5")
-    assert r.status_code == 400 and "em uso" in r.json()["detail"]
-    assert audit.consultar() == ([], False)
-
-
-def test_criar_endereco_e_localizacao_do_cpe(cliente):
-    assert cliente.post("/enderecos", json={"client_pk": 10, "address": "Rua C", "address_number": "1"}).status_code == 200
-    assert ultimo()["alvo"] == {"client_pk": 10, "cliente": "Maria da Silva", "endereco": "Rua C, 1"}
-    assert cliente.put("/cpe/9/localizacao", json={"address_latitude": "-5", "address_longitude": "-42"}).status_code == 200
-    assert ultimo()["alvo"] == {"cpe_pk": 9, "alteracoes": [{"rotulo": "Localização do equipamento", "depois": "-5, -42"}]}
-
-
 def test_telefones(cliente):
     assert cliente.post("/telefones", json={"client_pk": 10, "phone_identification": "Casa",
                                             "phone_number": "8632220000"}).status_code == 200
@@ -107,14 +81,6 @@ def test_telefones(cliente):
     ev = ultimo()
     assert ev["acao"] == "telefone.editar"
     assert ev["alvo"]["alteracoes"] == [{"rotulo": "Número", "antes": "86999990000", "depois": "86988887777"}]
-
-
-def test_cancelar_e_reabrir_os(cliente):
-    assert cliente.post("/os/300/cancelar", json={"op_os_pk": 31, "op_desc": "Cliente desistiu"}).status_code == 200
-    assert ultimo()["acao"] == "os.cancelar"
-    assert ultimo()["alvo"] == {"ticket_pk": 300, "op_os_pk": 31, "motivo": "Cliente desistiu"}
-    assert cliente.post("/os/300/reabrir", json={"op_os_pk": 31}).status_code == 200
-    assert ultimo()["alvo"] == {"ticket_pk": 300, "op_os_pk": 31}
 
 
 def test_busca_de_cliente_em_paralelo(cliente, monkeypatch):

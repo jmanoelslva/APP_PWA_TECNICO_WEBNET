@@ -1,13 +1,4 @@
-/**
- * Abas do rodapé no jeito de app nativo: o Início fica sempre na base do
- * histórico e, acima dele, só a aba atual (com as telas abertas a partir
- * dela). Trocar de aba não empilha: "Voltar" de qualquer aba leva ao Início
- * e, no Início, sai do app.
- *
- * `idx` é a posição da entrada no histórico (o React Router grava em
- * history.state.idx); `idxInicio` é a posição do Início, quando ele está
- * por baixo da tela atual.
- */
+/** Abas como app nativo: Início na base, só a aba atual acima. Voltar de qualquer aba vai ao Início. */
 export type PassoAba =
   | { tipo: 'nada' }
   | { tipo: 'empilhar'; para: string }

@@ -1,6 +1,4 @@
 .pull-to-refresh-indicador {
-  /* Fica fora do fluxo da página: desce por cima do conteúdo (que não se
-     mexe), presa no topo da tela. */
   position: fixed;
   top: env(safe-area-inset-top, 0px);
   left: 50%;

@@ -1,25 +1,13 @@
 import { formatarStatusContrato } from '../../utils/formatacao'
 
-// Formatação da sessão online e do histórico de conexão (CardSessaoOnline,
-// CardRede).
-
 export function rotuloEncerramento(causa: number | undefined): string {
-  // Só os códigos abaixo têm tradução conhecida (ver
-  // CONTROLLR_API_NOTES.md, seção 7.5) — para qualquer outro código
-  // (RFC 2866 Acct-Terminate-Cause) mostra o número cru em vez de
-  // arriscar uma tradução não confirmada.
+  // Sem tradução conhecida, mostra o código.
   if (causa == null || causa === 0) return '—'
   if (causa === 2) return 'Lost Carrier'
   return `Código ${causa}`
 }
 
-// /aaa_ctl/session_online/list não tem documentação oficial. Campos de
-// uma sessão (usados aqui): session_callingid (MAC), contract_status,
-// nas_name/nas_addr, session_nas_port_id, session_v4_ip, session_v6_px/pd,
-// session_acct_time (segundos conectado) e stats.total.rx_byte/tx_byte —
-// esses dois últimos vêm aninhados dentro de "stats.total", com o valor
-// em KB (não bytes, apesar do nome). Candidatos alternativos ficam como
-// fallback caso o formato mude.
+// session_online/list (sem doc): rx/tx em KB, em stats.total.
 export function formatarBytes(valor: unknown): string {
   const n = Number(valor)
   if (!Number.isFinite(n)) return String(valor)
@@ -40,9 +28,7 @@ export function formatarDuracaoSegundos(segundos: number): string {
   const horas = Math.floor((total % 86400) / 3600)
   const minutos = Math.floor((total % 3600) / 60)
   const s = total % 60
-  // Sessões de dias exibidas em "60h 26min" ficam difíceis de ler —
-  // acima de 24h passa para dd/hh/mm com zero à esquerda (ex.:
-  // "02d 12h 26m"), como um cronômetro.
+  // Acima de 24 h: "02d 12h 26m".
   if (dias > 0) {
     const pad = (n: number) => String(n).padStart(2, '0')
     return `${pad(dias)}d ${pad(horas)}h ${pad(minutos)}m`
@@ -56,8 +42,7 @@ function formatarTempoConectado(valor: unknown, chave: string): string {
   const chaveMin = chave.toLowerCase()
   const n = Number(valor)
   if (chaveMin.includes('start') || chaveMin.includes('inicio')) {
-    // valor é um instante (início da sessão), não uma duração — calcula
-    // o tempo decorrido até agora. Aceita epoch (segundos) ou ISO.
+    // Instante de início (epoch ou ISO) → tempo decorrido.
     const inicioMs = /^\d+$/.test(String(valor)) ? n * 1000 : new Date(String(valor)).getTime()
     if (!Number.isFinite(inicioMs)) return String(valor)
     return formatarDuracaoSegundos((Date.now() - inicioMs) / 1000)
@@ -106,10 +91,7 @@ function porConsumo(direcao: 'rx' | 'tx'): (sessao: Sessao) => ValorEncontrado |
   }
 }
 
-// Ordem da tela (opção C da revisão de layout): primeiro o que o técnico
-// confere (IP, tempo), depois concentrador, equipamento e consumo. Rótulos
-// curtos para caber numa linha. O usuário PPPoE não entra: já está no
-// cartão de acesso logo acima.
+// Ordem da tela: IP e tempo, depois concentrador, equipamento e consumo.
 const CAMPOS_DESEJADOS: CampoDesejado[] = [
   { rotulo: 'IPv4', extrair: porCandidatos(['session_v4_ip', 'v4_ip']) },
   { rotulo: 'IPv6 (PX)', extrair: porCandidatos(['session_v6_px', 'v6_px']) },
@@ -124,9 +106,7 @@ const CAMPOS_DESEJADOS: CampoDesejado[] = [
   { rotulo: 'Porta NAS', extrair: porCandidatos(['session_nas_port_id', 'nas_port_id']) },
   { rotulo: 'MAC da CPE', extrair: porCandidatos(['session_callingid', 'cpe_mac', 'session_calling_station_id', 'mac']) },
   { rotulo: 'Circuit ID', extrair: porCandidatos(['session_circuit_id', 'cpe_circuit_id']) },
-  // rx/tx aqui são do ponto de vista do NAS (padrão RADIUS accounting):
-  // rx_byte = recebido PELO NAS vindo do cliente = upload do cliente;
-  // tx_byte = enviado PELO NAS para o cliente = download do cliente.
+  // rx/tx do ponto de vista do NAS: tx = download do cliente.
   { rotulo: 'Download', extrair: porConsumo('tx'), formatar: formatarBytes },
   { rotulo: 'Upload', extrair: porConsumo('rx'), formatar: formatarBytes },
   {

@@ -12,11 +12,7 @@ export interface ConexaoDoCliente {
   pppoe: string | null
 }
 
-/**
- * CTO tocada no Mapa de CTOs: ocupação, distância, conexões, rota, grade de
- * portas e, com um cliente buscado, "Usar esta CTO" (abre a Conexão dele na
- * aba CTO já com a CTO e a porta escolhidas, faltando só salvar).
- */
+/** CTO tocada: ocupação, distância, rota, portas e "Usar esta CTO" para o cliente buscado. */
 export default function CartaoCto({
   dp,
   distanciaM,

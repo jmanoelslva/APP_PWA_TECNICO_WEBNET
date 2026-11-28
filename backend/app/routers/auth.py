@@ -25,8 +25,7 @@ class LoginRequest(BaseModel):
 
 class TecnicoDto(BaseModel):
     username: str
-    # Nome cadastrado no Controllr (ex.: "Pedro Carlos"); None quando o
-    # técnico não tem permissão de ler /web_auth/acl_user ou não há nome.
+    # None sem permissão em /web_auth/acl_user ou sem nome.
     nome: str | None = None
 
 
@@ -46,12 +45,7 @@ def nome_do_usuario(registros: list[dict[str, Any]], username: str) -> str:
 
 
 async def resolver_nome(sessao: TechnicianSession) -> str | None:
-    """
-    Consulta uma única vez por sessão o nome do técnico no Controllr. A lista
-    de usuários é pequena e o filtro é feito aqui (mesmo cuidado do antigo
-    _find_user_pk). Sem permissão, erro ou demora: grava "" e segue com o
-    username — nunca atrapalha o login.
-    """
+    """Nome do técnico, uma vez por sessão. Sem permissão ou erro: "" e fica o username."""
     if sessao.nome is None:
         nome = ""
         try:
@@ -87,8 +81,6 @@ async def login(payload: LoginRequest, request: Request, response: Response) -> 
     limite_login.acertou(ip, payload.username)
 
     if resultado_login.cookie_header is None:
-        # Toda chamada ao Controllr usa esse cookie (ver
-        # deps.py::get_auth_context) — sem ele o login não pode prosseguir.
         logger.error("Login de %s sem cookie de sessão do Controllr", payload.username)
         return LoginResponse(success=False, message="Não foi possível iniciar a sessão. Tente novamente.")
 
@@ -106,8 +98,7 @@ async def login(payload: LoginRequest, request: Request, response: Response) -> 
         max_age=SESSION_COOKIE_MAX_AGE_SECONDS,
         path="/",
     )
-    # Sem buscar o nome aqui: o login continua sem a lista de usuários (1.14.2).
-    # O app pede /auth/me logo depois, em segundo plano, e o nome vem por lá.
+    # O nome vem depois por /auth/me (login sem a lista de usuários desde a 1.14.2).
     return LoginResponse(success=True, tecnico=TecnicoDto(username=payload.username))
 
 

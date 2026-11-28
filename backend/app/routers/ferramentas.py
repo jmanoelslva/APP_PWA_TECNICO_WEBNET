@@ -1,18 +1,5 @@
-"""
-Ferramenta "Meu IP" — IP público (IPv4 e/ou IPv6) e geolocalização
-aproximada da rede em que o dispositivo do técnico está conectado agora
-(útil, por exemplo, para conferir a rede do próprio cliente durante uma
-visita).
-
-O frontend descobre o IPv4/IPv6 do dispositivo direto pelos endpoints
-públicos do ipify (api.ipify.org / api6.ipify.org, sem chave) e manda
-cada um para cá via "ip" — este backend só faz a parte que exige chave:
-consultar a Geolocation API do ipify (geo.ipify.org) para aquele IP. A
-chave (IPIFY_API_KEY em config.py) fica só no servidor, nunca no app.
-Sem "ip" informado, cai para o IP detectado no servidor (mesma lógica de
-audit.py::obter_ip_origem, que já lida com o proxy reverso na frente
-deste backend).
-"""
+"""Meu IP: o app descobre o IP pelo ipify; aqui só a geolocalização (chave só no servidor). Sem ip, usa o da
+requisição."""
 
 from typing import Any
 
@@ -60,13 +47,7 @@ async def meu_ip(
 
 
 def normalizar_viacep(dados: dict[str, Any]) -> dict[str, Any] | None:
-    """Converte a resposta do ViaCEP para os campos de endereço do Controllr.
-
-    CEP inexistente vem como {"erro": true}. CEP geral de cidade vem com
-    logradouro e bairro vazios — devolvidos como None para o app não apagar
-    o que o técnico já digitou. "siafi" é o código de município que o
-    Controllr exige em address_siafi.
-    """
+    """ViaCEP → campos do Controllr. Logradouro/bairro vazios viram None; siafi = código do município."""
     if not dados or dados.get("erro"):
         return None
 
@@ -89,8 +70,7 @@ async def consultar_cep(
     cep: str,
     _sessao: TechnicianSession = Depends(get_current_session),
 ) -> dict[str, Any]:
-    """Endereço de um CEP via ViaCEP (público, sem chave), consultado pelo
-    servidor para não abrir mais um domínio no CSP do app."""
+    """CEP pelo servidor, para não abrir outro domínio no CSP."""
     digitos = "".join(c for c in cep if c.isdigit())
     if len(digitos) != 8:
         raise HTTPException(status_code=400, detail="CEP deve ter 8 dígitos.")

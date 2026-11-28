@@ -1,8 +1,4 @@
-// Atendimento em andamento: o cliente (e a conexão e a OS dele) que o
-// técnico está vendo. Alimenta a barra do atendimento (troca entre
-// Cliente, Conexão, ONU, OS e Financeiro sem empilhar telas) e o
-// "Continuar atendimento" do Início. Fica no localStorage por até 12 h e
-// é apagado ao sair da conta.
+// Atendimento em andamento (barra e "Continuar atendimento"), no localStorage por até 12 h, apagado ao sair.
 
 export interface Atendimento {
   clientPk?: number
@@ -56,12 +52,7 @@ export type DadosAtendimento = Omit<Atendimento, 'em' | 'caminho' | 'tela'>
 
 const IDENTIFICADORES = ['clientPk', 'cpePk', 'ticketPk', 'pppoe'] as const
 
-/**
- * O que a tela sabe é do mesmo atendimento guardado? Algum identificador
- * (cliente, conexão, OS ou PPPoE) em comum e nenhum diferente. Enquanto a
- * tela carrega, ou quando não acha a ONU/conexão, ela só tem o que veio no
- * endereço (ex.: o PPPoE) — e isso basta para manter a barra.
- */
+/** Mesmo atendimento: algum identificador em comum e nenhum divergente. */
 export function mesmoAtendimento(atual: Atendimento | null, novo: DadosAtendimento): boolean {
   if (!atual) return false
   let emComum = false
@@ -76,11 +67,7 @@ export function mesmoAtendimento(atual: Atendimento | null, novo: DadosAtendimen
   return emComum
 }
 
-/**
- * Junta o que a tela sabe ao atendimento guardado. Mesmo atendimento:
- * completa. Outro cliente: começa um atendimento novo, para a barra nunca
- * misturar a conexão de um com o cliente de outro.
- */
+/** Mesmo atendimento completa; outro cliente começa do zero. */
 export function juntarAtendimento(atual: Atendimento | null, novo: DadosAtendimento, agora = Date.now()): Atendimento {
   const base = mesmoAtendimento(atual, novo) ? atual : null
   const limpo = Object.fromEntries(Object.entries(novo).filter(([, v]) => v != null && v !== '')) as DadosAtendimento
@@ -102,11 +89,7 @@ export type OsDoCliente<T extends ComChamado> =
   | { tipo: 'varias'; ordens: T[] }
   | { tipo: 'nenhuma' }
 
-/**
- * OS em aberto do cliente (pela lista de OS abertas): uma abre direto,
- * várias viram a escolha numa janela (sem sair do atendimento), nenhuma
- * vira aviso. Conta por chamado (ticket_pk), não por linha.
- */
+/** OS abertas do cliente, contadas por chamado: uma abre, várias pedem escolha, nenhuma avisa. */
 export function osDoCliente<T extends ComChamado>(ordens: T[], clientPk: number): OsDoCliente<T> {
   const porChamado = new Map<number, T>()
   for (const o of ordens) {

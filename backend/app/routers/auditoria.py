@@ -16,10 +16,7 @@ from ..where import corpo, where_eq
 
 logger = logging.getLogger(__name__)
 
-# Registros antigos só têm os números internos (onu_pk/olt_pk). O resto vem
-# da mesma busca de ONU que a tela usa (/fiber_ctl/onu/list), guardado por
-# 10 min. O Controllr ignora filtro que não entende e devolve qualquer ONU —
-# por isso só vale a linha cujo número confere com o pedido.
+# Dados de ONU para registros antigos (só onu_pk/olt_pk), em cache por 10 min. Só vale a linha cujo pk confere.
 _VALIDADE_S = 600
 BUSCAS_POR_CONSULTA = 60
 _cache: dict[tuple[str, int], tuple[float, dict[str, Any] | None]] = {}
@@ -104,8 +101,7 @@ async def listar(
         if valor and not _DATA.match(valor):
             raise HTTPException(status_code=400, detail=f"Data inválida em '{nome}': use AAAA-MM-DD.")
     eventos, mais = consultar(tecnico, acao, de, ate, limite, busca)
-    # Registros antigos: completa em paralelo (poucos de cada vez, para não
-    # sobrecarregar o Controllr) e no máximo BUSCAS_POR_CONSULTA ONUs novas.
+    # Completa em paralelo, limitado a BUSCAS_POR_CONSULTA ONUs.
     pendentes = [e.setdefault("alvo", {}) for e in eventos]
     pendentes = [a for a in pendentes if not a.get("olt_nome") and (a.get("onu_pk") or a.get("olt_pk"))]
     novas = {("onu_pk", a["onu_pk"]) if a.get("onu_pk") else ("olt_pk", a["olt_pk"]) for a in pendentes}

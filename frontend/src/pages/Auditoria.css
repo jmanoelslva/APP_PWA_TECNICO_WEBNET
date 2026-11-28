@@ -4,8 +4,6 @@
   padding: 24px 20px 48px;
 }
 
-
-
 .auditoria-dia {
   margin-bottom: 18px;
 }
@@ -158,8 +156,6 @@
   overflow-wrap: anywhere;
 }
 
-/* Filtros: período em abas, ação e técnico no campo padrão, tudo aplicado
-   na hora (sem botão "Filtrar"). */
 .auditoria-filtros {
   display: flex;
   flex-direction: column;

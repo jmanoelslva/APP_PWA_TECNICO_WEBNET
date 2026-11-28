@@ -6,12 +6,7 @@ import { limparAtendimento } from '../utils/atendimento'
 import { SessionContext, type TecnicoLogado } from './session-context'
 import { lembrarNome } from '../utils/nomeTecnico'
 
-/**
- * Estado de sessão em memória — o cookie de sessão (TECSESSION) em si é do
- * navegador, não da nossa memória, então sobrevive a um F5. Por isso, ao
- * montar, confirmamos com o backend (GET /auth/me) se a sessão ainda vale
- * antes de mandar para o login.
- */
+/** O cookie sobrevive ao F5: confirma com /auth/me antes de mandar ao login. */
 export function SessionProvider({ children }: { children: ReactNode }) {
   const [logado, setLogado] = useState(false)
   const [verificando, setVerificando] = useState(true)
@@ -19,9 +14,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const [erro, setErro] = useState<string | null>(null)
   const [tecnico, setTecnico] = useState<TecnicoLogado | null>(null)
   const { toast } = useToast()
-  // Espelha "logado" num ref porque o ouvinte de sessão expirada (efeito
-  // abaixo) só registra a função uma vez — sem o ref ficaria preso ao
-  // "logado" (sempre false) capturado no primeiro render.
+  // Ref para o ouvinte registrado uma vez ler o valor atual.
   const logadoRef = useRef(false)
 
   useEffect(() => {
@@ -80,11 +73,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
-  // Ouvinte global de "sessão expirada" — dispara em qualquer 401 fora de
-  // /auth/login e /auth/logout (ver src/api/client.ts), vindo de qualquer
-  // tela. Só reage se já havia sessão de fato nesta aba — a checagem
-  // inicial (useEffect acima) também bate 401 num visitante sem cookie
-  // nenhum, e isso não é "sessão expirou", é só "nunca logou".
+  // 401 de qualquer tela; só conta se já havia sessão nesta aba.
   useEffect(() => {
     aoExpirarSessao(() => {
       if (!logadoRef.current) return

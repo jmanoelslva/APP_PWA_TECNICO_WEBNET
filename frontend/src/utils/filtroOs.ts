@@ -2,8 +2,7 @@ import type { OrdemServicoDto } from '../api/client'
 import { dataParaFormatoServidor } from './formatacao'
 import { osAtrasada } from './minhasOs'
 
-// Filtros da tela OS / Suporte, aplicados na lista já carregada (só OS em
-// aberto) — não faz chamada nova ao Controllr.
+// Filtros da lista de OS já carregada.
 
 export type FiltroQuando = 'todas' | 'hoje' | 'atrasadas' | 'proximas'
 export type FiltroEtapa = 'todas' | 'agendada' | 'respondida' | 'iniciada'
@@ -65,8 +64,7 @@ export function filtrarOs(ordens: OrdemServicoDto[], filtro: FiltroOs, agora: Da
 
   return ordens.filter((os) => {
     const dia = os.op_date_sched?.slice(0, 10) ?? ''
-    // "Hoje" = o trabalho de hoje: as agendadas para hoje e as de dias
-    // anteriores ainda em aberto (mesma conta de "Abertas" no Início).
+    // Hoje = agendadas para hoje e atrasadas em aberto.
     if (filtro.quando === 'hoje' && !(dia !== '' && dia <= hoje)) return false
     if (filtro.quando === 'atrasadas' && !osAtrasada(os, agora)) return false
     if (filtro.quando === 'proximas' && !(dia > hoje)) return false

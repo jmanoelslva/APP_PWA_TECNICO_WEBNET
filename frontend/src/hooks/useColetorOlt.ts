@@ -1,11 +1,6 @@
 import { useEffect, useState } from 'react'
 
-/**
- * O Coletor de OLTs (projeto COLETA-OLT) é opcional: quando instalado no
- * mesmo servidor, fica em /olt/ e responde /olt/api/saude sem login. Sem ele,
- * /olt/ cai no próprio index.html do técnico (ou 404) — por isso confere o
- * JSON, e não só o status, antes de mostrar o menu "OLTs".
- */
+/** Coletor de OLTs opcional em /olt/: confere o JSON de /olt/api/saude antes de mostrar o menu. */
 export function useColetorOlt(): boolean {
   const [disponivel, setDisponivel] = useState(false)
 

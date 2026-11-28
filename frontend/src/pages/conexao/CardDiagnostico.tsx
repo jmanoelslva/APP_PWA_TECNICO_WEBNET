@@ -20,10 +20,7 @@ const ROTULO_ATALHO: Record<NonNullable<Diagnostico['atalho']>, string> = {
   historico: 'Ver as quedas',
 }
 
-/**
- * "Por que está sem internet?" no topo do Resumo: um veredito com o
- * próximo passo (regra em utils/diagnostico.ts) e um atalho para ele.
- */
+/** Veredito com próximo passo (utils/diagnostico.ts). */
 export default function CardDiagnostico({
   cpe,
   sessao,

@@ -18,10 +18,7 @@ export function jaInstalado(): boolean {
   )
 }
 
-/**
- * `beforeinstallprompt` só dispara UMA VEZ por carregamento de página
- * inteiro — por isso o evento capturado vive em módulo, não em useState.
- */
+/** beforeinstallprompt dispara uma vez por carga: o evento fica no módulo. */
 let eventoCapturado: EventoInstalarPwa | null = null
 let instaladoCompartilhado = typeof window === 'undefined' ? false : jaInstalado()
 const ouvintesMudanca = new Set<() => void>()

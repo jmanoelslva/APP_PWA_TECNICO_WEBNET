@@ -28,14 +28,8 @@ const ITENS: { tela: TelaAtendimento; rotulo: string; Icone: IconType; cor: stri
   { tela: 'financeiro', rotulo: 'Financeiro', Icone: LuReceipt, cor: CORES.financeiro },
 ]
 
-/**
- * Barra do atendimento, fixa no topo de Cliente, Conexão, ONU, OS e
- * Financeiro: as cinco telas do cliente atendido. Sem o nome do cliente:
- * cada tela já mostra quem é (o usuário achou a linha repetida). Trocar por ela não
- * empilha (replace), então um Voltar devolve à tela de onde o técnico veio
- * (lista de OS, busca, Início). `dados`: o que esta tela sabe do cliente;
- * null enquanto carrega.
- */
+/** Barra do atendimento (Cliente, Conexão, ONU, OS, Financeiro). Troca com replace: Voltar volta à origem. `dados` null
+   enquanto carrega. */
 export default function BarraAtendimento({ tela, dados }: { tela: TelaAtendimento; dados: DadosAtendimento | null }) {
   const location = useLocation()
   const navigate = useNavigate()
@@ -66,8 +60,7 @@ export default function BarraAtendimento({ tela, dados }: { tela: TelaAtendiment
   const itens = ITENS.filter((item) => item.tela === tela || destinos[item.tela])
   if (!atual || itens.length < 2) return null
 
-  // OS sem chamado no atendimento: procura as OS abertas do cliente em vez
-  // de abrir a lista inteira.
+  // OS sem chamado: procura as OS abertas do cliente.
   async function abrirOs(para: string) {
     if (atual?.ticketPk != null || atual?.clientPk == null) {
       navigate(para, { replace: true, viewTransition: true })
@@ -130,9 +123,7 @@ export default function BarraAtendimento({ tela, dados }: { tela: TelaAtendiment
                   <button
                     type="button"
                     onClick={() => {
-                      // Fechar a janela tira a entrada dela do histórico (history.back,
-                      // ver useFecharComVoltar); a troca de tela vem depois disso, para
-                      // não sobrar tela empilhada.
+                      // Fecha a janela (history.back) antes de trocar de tela.
                       let feito = false
                       const trocar = () => {
                         if (feito) return

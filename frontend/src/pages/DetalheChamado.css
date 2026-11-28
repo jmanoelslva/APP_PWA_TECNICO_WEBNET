@@ -97,10 +97,6 @@
   display: flex;
 }
 
-.linha-tecnico {
-  justify-content: flex-end;
-}
-
 .linha-equipe {
   justify-content: flex-start;
 }
@@ -111,13 +107,6 @@
   padding: 10px 14px;
   display: flex;
   flex-direction: column;
-}
-
-.balao-tecnico {
-  background: color-mix(in srgb, var(--cor-suporte) 14%, var(--cor-superficie));
-  border: 1px solid color-mix(in srgb, var(--cor-suporte) 22%, transparent);
-  color: var(--cor-texto);
-  border-bottom-right-radius: 4px;
 }
 
 .balao-equipe {

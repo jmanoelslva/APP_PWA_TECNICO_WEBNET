@@ -1,24 +1,5 @@
-"""
-Store de sessão do técnico (processo único).
-
-Guarda o cookie de sessão do POST /login do Controllr (BRBOSCookie),
-associado a um session_id opaco que vira o valor do
-cookie TECSESSION no navegador. Esse cookie é usado em toda chamada de
-API deste backend (ver deps.py::get_auth_context) — Basic Auth por
-requisição abria uma segunda sessão "implícita" no Controllr, sem token
-pra fechar, duplicada na lista de usuários online do painel.
-
-Sem TTL próprio: uma TechnicianSession vive enquanto o cookie continuar
-sendo aceito pelo Controllr (que expira a sessão por inatividade).
-
-Sobrevive a reinício: com SESSOES_CHAVE no backend.env (gerada pelo
-install.sh), as sessões são gravadas cifradas (Fernet) em SESSOES_ARQUIVO
-a cada login/saída e relidas ao subir. Assim atualizar o app não derruba
-os técnicos — na volta, a primeira requisição de cada um confere com o
-Controllr se a sessão ainda vale (controllr_checked_at = 0). Sem a chave
-(dev), fica só em memória, como antes. Arquivo ilegível ou chave trocada:
-começa vazio (todo mundo entra de novo), nunca derruba o serviço.
-"""
+"""Sessões do técnico: cookie do Controllr ligado ao TECSESSION. Gravadas cifradas (Fernet) com SESSOES_CHAVE; sem
+chave, só memória. Arquivo ilegível começa vazio."""
 
 import json
 import logging
@@ -39,19 +20,14 @@ class TechnicianSession:
     username: str
     controllr_cookie: str
     created_at: float
-    # Última vez que confirmamos com o Controllr que controllr_cookie ainda
-    # é uma sessão válida lá (ver deps.py::get_current_session) — 0.0 força
-    # a primeira checagem já na próxima requisição autenticada.
+    # 0 força checar no Controllr na próxima requisição.
     controllr_checked_at: float = 0.0
-    # Nome do técnico no Controllr (user_name do acl_user), usado nas
-    # mensagens ao cliente. None = ainda não consultado; "" = consultado
-    # sem resultado (sem permissão ou sem nome) — aí vale o username.
+    # None = não consultado; "" = sem nome (vale o username).
     nome: str | None = None
 
 
 _sessions: dict[str, TechnicianSession] = {}
-# Outros cookies que valem a pena manter entre reinícios (ex.: o do vigia de
-# OS, para o usuário de consulta não sair e entrar no Controllr a cada deploy).
+# Cookies extras mantidos entre reinícios (ex.: vigia de OS).
 _extras: dict[str, str] = {}
 
 
@@ -98,8 +74,7 @@ def _gravar() -> None:
         os.chmod(temporario, 0o600)
         temporario.replace(arquivo)
     except Exception:
-        # Falha ao gravar não pode derrubar login/saída: só perde a sessão
-        # num próximo reinício.
+        # Falha ao gravar não derruba login/saída.
         logger.exception("Não foi possível gravar as sessões em %s", SESSOES_ARQUIVO)
 
 

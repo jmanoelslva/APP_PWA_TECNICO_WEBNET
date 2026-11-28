@@ -1,18 +1,4 @@
-"""
-Log de auditoria próprio — não depende do Controllr.
-
-O Controllr autentica cada ação pelo cookie de sessão do próprio técnico
-(ver deps.py — cada sessão carrega o cookie criado no login dele, não uma
-conta compartilhada), então "quem fez" já está resolvido do lado de lá. O
-Controllr não registra o IP de origem corretamente: como este backend
-fala com ele por trás de um proxy, o IP que chega lá é sempre o do
-servidor, e a API não aceita um cabeçalho tipo X-Forwarded-For para
-repassar o IP real. A auditoria por IP é resolvida aqui: técnico + IP
-real + ação, gravado localmente.
-
-Arquivo local em JSON Lines (uma linha por evento) — mesma abordagem
-simples de sessions.py (uso interno, poucos técnicos, sem banco próprio).
-"""
+"""Auditoria própria: técnico, IP real e ação, em JSON Lines (o Controllr só vê o IP do servidor)."""
 
 import ipaddress
 import json
@@ -39,19 +25,8 @@ def _ip_valido(valor: str | None) -> str | None:
 
 
 def obter_ip_origem(request: Request) -> str:
-    """
-    IP real de quem está usando o app, sem confiar em cabeçalho que o
-    navegador possa mandar:
-
-    1. X-Real-IP — o nosso proxy (Nginx ou Apache) sobrescreve com o IP da
-       conexão (ver deploy/*.conf.example);
-    2. o ÚLTIMO IP do X-Forwarded-For — é o que o nosso proxy acrescenta; os
-       anteriores vêm do navegador e podem ser inventados;
-    3. o IP da conexão TCP (dev, sem proxy na frente).
-
-    CF-Connecting-IP não é usado: sem Cloudflare na frente, qualquer um
-    manda esse cabeçalho com o IP que quiser.
-    """
+    """IP real: X-Real-IP do proxy, senão o último do X-Forwarded-For, senão o da conexão. CF-Connecting-IP não é
+    confiável."""
     real = _ip_valido(request.headers.get("x-real-ip"))
     if real:
         return real
@@ -64,8 +39,7 @@ def obter_ip_origem(request: Request) -> str:
 
 # ------------------------------------------------------------------ gravação
 
-# Um arquivo por mês (auditoria-2026-10.jsonl, na pasta de AUDIT_LOG_PATH);
-# os de mais de AUDITORIA_RETENCAO_MESES meses são apagados ao virar o mês.
+# Um arquivo por mês; os anteriores a AUDITORIA_RETENCAO_MESES são apagados na virada.
 _lock = threading.Lock()
 _ultimo_mes_limpo: str | None = None
 
@@ -94,9 +68,7 @@ def _limpar_antigos(mes_atual: str) -> None:
             arq.unlink(missing_ok=True)
 
 
-# Ações de campo: levam a localização do técnico (cabeçalho X-Localizacao,
-# "lat;lng;precisão_m;idade_s", enviado pelo app com a última leitura do
-# GPS). Login, financeiro e telefone ficam sem localização.
+# Ações de campo gravam a localização do cabeçalho X-Localizacao ("lat;lng;precisão_m;idade_s").
 PREFIXOS_ACAO_CAMPO = ("os.", "cpe.", "onu.", "endereco.", "cto.")
 
 
@@ -153,10 +125,7 @@ def consultar(
     limite: int = 200,
     busca: str | None = None,
 ) -> tuple[list[dict[str, Any]], bool]:
-    """Eventos mais recentes primeiro (datas "AAAA-MM-DD", inclusivas).
-    `busca`: trecho do cliente, PPPoE, serial ou número do chamado/OS
-    ("#123" ou "123"), procurado em qualquer campo do alvo.
-    Lê também o arquivo único antigo (antes da divisão por mês)."""
+    """Eventos mais recentes primeiro. Datas AAAA-MM-DD inclusivas; busca em qualquer campo do alvo ("#123" ou "123")."""
     arquivos = sorted(_pasta().glob(f"{Path(AUDIT_LOG_PATH).stem}-*.jsonl"), reverse=True)
     antigo = Path(AUDIT_LOG_PATH)
     if antigo.exists():

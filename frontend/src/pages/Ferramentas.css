@@ -68,8 +68,6 @@
   text-align: right;
 }
 
-/* Ferramentas numa lista só, com divisórias (como o menu de configurações),
-   em vez de um cartão para cada uma. */
 .ferramentas-lista {
   list-style: none;
   margin: 0;

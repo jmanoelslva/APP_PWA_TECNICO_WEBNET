@@ -1,10 +1,4 @@
-/**
- * Janelas que sobem de baixo fecham ao arrastar para baixo, como num app
- * nativo. Um só ouvinte para o app todo: vale para qualquer fundo de janela
- * cuja classe termina em "-fundo" (folha de configurações, modais da OS, do
- * cliente, da ONU…). Soltar depois de arrastar o bastante equivale a tocar
- * fora da janela — o mesmo onClick do fundo que cada tela já tem fecha.
- */
+/** Janela de baixo (*-fundo) fecha ao arrastar para baixo; soltar equivale a tocar fora. */
 
 // Distância (px) que conta como "quis fechar".
 export const LIMITE_FECHAR = 90
@@ -49,8 +43,7 @@ export function iniciarArrastarFolhas(): void {
     'touchstart',
     (evento) => {
       const achado = fundoDaJanela(evento.target)
-      // Só arrasta com o conteúdo já no topo — da janela e de qualquer lista
-      // com rolagem própria dentro dela (senão puxar para baixo é rolar).
+      // Só arrasta com a janela e as listas internas no topo.
       if (!achado || algumRolado(evento.target, achado.janela) || evento.touches.length !== 1) return
       ativo = { ...achado, inicioY: evento.touches[0].clientY, deslocamento: 0 }
     },

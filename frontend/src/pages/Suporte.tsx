@@ -14,9 +14,7 @@ import { FILTRO_VAZIO, filtrarOs, filtroAtivo, tarefasDaLista, type FiltroOs, ty
 import { CORES } from '../utils/cores'
 import './Suporte.css'
 
-// Sem "carregar mais": busca todas as páginas de OS em aberto de uma vez
-// (api/client.ts::listarTodasOrdensServico), porque os filtros trabalham na
-// lista inteira e a ordem é da mais antiga para a mais nova.
+// Busca todas as páginas de OS em aberto: os filtros usam a lista inteira.
 
 // Filtro escolhido vale enquanto o app estiver aberto (volta da OS e continua).
 const CHAVE_FILTRO = 'webnet-tecnico-filtro-os'
@@ -55,10 +53,7 @@ export default function Suporte() {
 
   const [ordens, setOrdens] = useState<OrdemServicoDto[]>([])
   const [params] = useSearchParams()
-  // Filtro pelo endereço: ?busca= vem do atalho "OS" da tela do cliente e
-  // ?quando= dos números do dia no Início (Abertas → hoje, Atrasadas →
-  // atrasadas). Vale só nesta visita — não vira o filtro lembrado (antes o
-  // nome do cliente continuava na busca ao voltar para OS pela barra).
+  // ?busca= (do cliente) e ?quando= (do Início) valem só nesta visita.
   const buscaDoEndereco = params.get('busca')?.trim() ?? ''
   const quandoDoEndereco = OPCOES_QUANDO.find((o) => o.valor === params.get('quando'))?.valor
   const filtroDoEndereco: FiltroOs | null =
@@ -76,8 +71,7 @@ export default function Suporte() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // Mesma tela reaproveitada ao trocar de endereço (ex.: OS do cliente →
-  // "OS" na barra de baixo): acompanha o filtro do endereço novo.
+  // Acompanha o filtro quando a tela é reaproveitada.
   const enderecoAnterior = useRef(chaveDoEndereco)
   useEffect(() => {
     if (enderecoAnterior.current === chaveDoEndereco) return
@@ -129,7 +123,7 @@ export default function Suporte() {
   return (
     <PullToRefresh aoAtualizar={carregar}>
       <div className="suporte-tela tela-entrada">
-        <CabecalhoTela icone={LuWrench} cor={CORES.suporte} titulo="OS / Suporte" />
+        <CabecalhoTela icone={LuWrench} cor={CORES.suporte} titulo="OS" />
 
         {carregando && (
           <ul className="suporte-lista">
@@ -144,7 +138,7 @@ export default function Suporte() {
         )}
 
         {!carregando && erro && (
-          <EstadoErro mensagem={erro} cor={CORES.suporte} onTentarDeNovo={carregar} />
+          <EstadoErro mensagem={erro} onTentarDeNovo={carregar} />
         )}
 
         {!carregando && !erro && ordens.length === 0 && (

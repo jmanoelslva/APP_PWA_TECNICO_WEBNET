@@ -1,8 +1,4 @@
-/**
- * Foto do celular (3–8 MB) reduzida no próprio aparelho antes do anexo:
- * sobe rápido mesmo com 3G fraco. Qualquer falha devolve o arquivo original
- * — comprimir nunca pode impedir o envio.
- */
+/** Reduz a foto no aparelho antes de enviar; falha devolve o original. */
 
 // Lado maior da foto depois de reduzir: ainda dá para ler etiqueta de CTO.
 export const LADO_MAXIMO = 1600

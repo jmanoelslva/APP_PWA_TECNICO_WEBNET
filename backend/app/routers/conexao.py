@@ -16,16 +16,11 @@ router = APIRouter(prefix="/cpe", tags=["conexao"])
 @router.get("/offline")
 async def listar_cpe_offline(
     start: int = Query(default=0, ge=0),
-    # Até 500 por página: a tela carrega a lista inteira para agrupar por
-    # tempo offline e por CTO; páginas grandes terminam em 1 ou 2 idas.
+    # Até 500: a tela carrega a lista inteira.
     limit: int = Query(default=20, ge=1, le=500),
     ctx: AuthContext = Depends(get_auth_context),
 ) -> dict[str, Any]:
-    """
-    Lista clientes com contrato ativo (contract_status IN [1], ver seção
-    6 de CONTROLLR_API_NOTES.md), CPE habilitado (cpe_status = 1) e sem
-    sessão RADIUS ativa (cpe_sessions = 0).
-    """
+    """Contrato ativo, CPE habilitada e sem sessão RADIUS (CONTROLLR_API_NOTES.md, seção 6)."""
     where = where_and(
         {"field": "contract_status", "oper": OPER_IN, "value": [1]},
         {"field": "cpe_status", "oper": OPER_EQ, "value": 1},
@@ -53,18 +48,12 @@ async def buscar_cpe(
     if not client_pk and not contract_pk and not cpe_pk and not username and not dp_pk:
         raise HTTPException(status_code=400, detail="Informe client_pk, contract_pk, cpe_pk, username ou dp_pk.")
 
-    # "aaa_cpe.client_pk"/"aaa_cpe.contract_pk" — nome real da tabela é
-    # "aaa_cpe", não "cpe". "contract_pk"/"client_pk" sem prefixo são
-    # ambíguos em /aaa_ctl/cpe/list (colidem com a tabela de contrato) e
-    # não filtram de verdade sem o prefixo; cpe_pk é coluna própria, sem
-    # ambiguidade. username usa ILIKE com "%termo%" (busca parcial) em
-    # vez de EQUAL.
+    # Prefixo "aaa_cpe." obrigatório para client_pk/contract_pk. username por ILIKE.
     if cpe_pk:
         where = where_eq("cpe_pk", cpe_pk)
         resposta = await ctx.controllr.cpe_list(corpo(where, limit=20), model_return=True, model_extended=True)
     elif dp_pk:
-        # "aaa_cpe.dp_pk": "dp_pk" sem prefixo é ambíguo (erro 42702, a
-        # tabela da CTO entra no join) — confirmado ao vivo em 06/11.
+        # "dp_pk" sem prefixo dá erro 42702.
         where = where_eq("aaa_cpe.dp_pk", dp_pk)
         resposta = await ctx.controllr.cpe_list(
             corpo(where, limit=200, sort="cpe_dp_port", dir="ASC"), model_return=True, model_extended=True
@@ -73,9 +62,7 @@ async def buscar_cpe(
         where = where_eq("aaa_cpe.contract_pk", contract_pk)
         resposta = await ctx.controllr.cpe_list(corpo(where, limit=20), model_return=True, model_extended=True)
     elif username:
-        # client_status=0 = ativo — sem esse filtro, a busca por usuário
-        # PPPoE traz conexões de clientes desabilitados junto com as
-        # habilitadas.
+        # Só clientes ativos.
         where = where_and(
             {"field": "client_status", "oper": OPER_EQ, "value": 0},
             {"field": "cpe_username", "oper": OPER_ILIKE, "value": f"%{username.strip()}%"},
@@ -101,11 +88,7 @@ async def sessao_online_cpe(cpe_pk: int, ctx: AuthContext = Depends(get_auth_con
     return {"success": True, "results": resposta.results}
 
 
-# /aaa_ctl/session_history/list — sem doc oficial. O where é cpe_pk (=)
-# AND session_username (ILIKE, opcional) AND um grupo aninhado
-# [session_date_close >=, AND, session_date_close <=] para o período. Sem
-# período (data_inicio/data_fim ausentes), usa session_date_close IS NOT
-# NULL, sem faixa (equivalente ao preset "Desde o Início" do painel).
+# session_history/list (sem doc): cpe_pk, username opcional e faixa de session_date_close; sem período, IS NOT NULL.
 @router.get("/{cpe_pk}/historico-sessoes")
 async def historico_sessoes_cpe(
     cpe_pk: int,
@@ -143,16 +126,12 @@ async def historico_sessoes_cpe(
     )
     if not resposta.success:
         raise HTTPException(status_code=400, detail=detalhe_erro("Não foi possível consultar o histórico de conexão.", resposta))
-    # total = sessões no período inteiro (não só nesta página) — confirmado
-    # ao vivo em 06/11 com limit=1.
+    # total = sessões do período inteiro.
     return {"success": True, "results": resposta.results, "total": resposta.total}
 
 
 class ContextoAuditoriaCpe(BaseModel):
-    """Como a conexão estava na tela antes de salvar — só vai para a
-    auditoria, nunca para o Controllr. Senhas do Wi-Fi e de acesso ao
-    roteador: gravadas (anterior e nova), por decisão do usuário em 06/11 —
-    os técnicos já as veem no app."""
+    """Estado da tela antes de salvar, só para a auditoria. Senhas gravadas por decisão do provedor."""
 
     cliente: str | None = Field(default=None, max_length=128)
     pppoe: str | None = Field(default=None, max_length=64)
@@ -174,8 +153,7 @@ CAMPOS_CTO = {"dp_name": "CTO", "cpe_dp_port": "Porta da CTO", "cpe_obs": "Obser
 
 
 def _alteracoes_cpe(antes: dict[str, Any] | None, enviado: dict[str, Any]) -> list[dict[str, Any]]:
-    """Antes → depois de CTO, porta e observação. Observação apagada aparece
-    como "(vazia)". Sem o "antes" (Controllr não respondeu), só o novo valor."""
+    """Antes → depois de CTO, porta e observação."""
     depois = {k: v for k, v in enviado.items() if v is not None}
     if antes:
         lista = contexto.alteracoes(antes, depois, CAMPOS_CTO)
@@ -194,10 +172,7 @@ class WifiCpePayload(BaseModel):
 async def atualizar_wifi_cpe(
     cpe_pk: int, payload: WifiCpePayload, request: Request, ctx: AuthContext = Depends(get_auth_context)
 ) -> dict[str, Any]:
-    # cpe_wifi_encryption_type/cpe_wifi_encryption_password, doc oficial
-    # em apidoc.brbyte.com/#post-/aaa_ctl/cpe/update. Sem enum documentado
-    # para "type" (a doc só diz que é number) — o valor é editado cru,
-    # sem tradução para nome de protocolo.
+    # Tipo de criptografia sem enum documentado: vai cru.
     campos: dict[str, Any] = {"cpe_pk": cpe_pk}
     if payload.wifi_encryption_type is not None:
         campos["cpe_wifi_encryption_type"] = payload.wifi_encryption_type
@@ -206,8 +181,7 @@ async def atualizar_wifi_cpe(
     resposta = await ctx.controllr.cpe_update(urlencode(campos))
     if not resposta.success:
         raise HTTPException(status_code=400, detail=detalhe_erro("Não foi possível atualizar o Wi-Fi.", resposta))
-    # Senha anterior (vem da tela) e nova no registro. Salvar de novo sem
-    # mudar tipo nem senha não vira registro.
+    # Senha anterior e nova na auditoria; sem mudança, sem registro.
     a = payload.auditoria
     sem_mudanca = (
         a is not None
@@ -222,8 +196,7 @@ async def atualizar_wifi_cpe(
 
 
 def _acesso_sem_mudanca(payload: "CpeDetalhesPayload") -> bool:
-    """Login, porta e senha iguais ao que a tela tinha: salvar de novo não
-    vira registro. Sem o contexto da tela, não dá para saber: registra."""
+    """Sem mudança, sem registro. Sem contexto da tela, registra."""
     a = payload.auditoria
     if a is None or a.senha_acesso_alterada is not False:
         return False
@@ -231,9 +204,7 @@ def _acesso_sem_mudanca(payload: "CpeDetalhesPayload") -> bool:
 
 
 class CpeDetalhesPayload(BaseModel):
-    # Campos de /aaa_ctl/cpe/update. None aqui significa "não mexe nesse
-    # campo" — para limpar um valor (ex: observação), o front manda
-    # string vazia, não None (mesmo padrão de EnderecoPayload).
+    # None = não altera; "" limpa.
     cpe_obs: str | None = None
     dp_pk: int | None = None
     cpe_dp_port: int | None = None
@@ -267,9 +238,7 @@ async def atualizar_detalhes_cpe(
             enviado.pop("dp_name")
         base = antes or depois
         lista = _alteracoes_cpe(antes, enviado)
-        # Salvar de novo sem mudar nada (visto ao vivo em 06/11: "Salvar CTO"
-        # tocado duas vezes) não é alteração: sem registro. Sem o "antes" não
-        # dá para saber, então registra.
+        # Sem mudança, sem registro; sem "antes", registra.
         if lista or not antes:
             registrar_auditoria(request, ctx.session, "cpe.editar_cto" if muda_cto else "cpe.editar_observacao", {
                 k: v for k, v in {

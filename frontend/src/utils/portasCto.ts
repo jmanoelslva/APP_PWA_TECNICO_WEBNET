@@ -3,13 +3,7 @@ import type { CpeDto } from '../api/client'
 /** Contrato que ainda prende a porta: ativado, alertado, pendente ou bloqueado. */
 const CONTRATO_OCUPA_PORTA = new Set([1, 2, 3, 4])
 
-/**
- * Quem prende a porta é o CPE habilitado (cpe_status 1), não o contrato: o
- * Controllr recusa com "duplicate" a porta de outro CPE habilitado, inclusive
- * de contrato cancelado (visto nos dados em 06/11: cancelados seguem com CPE
- * habilitado; a única porta repetida é de um desativado com CPE desabilitado).
- * Sem cpe_status, cai na regra do contrato.
- */
+/** CPE habilitado (cpe_status 1) prende a porta, mesmo de contrato cancelado. Sem cpe_status, vale o contrato. */
 export const ocupaPorta = (cpe: CpeDto): boolean =>
   cpe.status != null ? cpe.status === 1 : CONTRATO_OCUPA_PORTA.has(cpe.contract_status ?? 1)
 
@@ -32,10 +26,7 @@ export interface PortasDaCto {
   semPorta: number
   /** Portas com mais de uma conexão. */
   repetidas: number[]
-  /**
-   * Portas gravadas em conexões com CPE desabilitado (contrato desativado).
-   * Não ocupam: a porta conta como livre, só com o registro do antigo ocupante.
-   */
+  /** Gravadas em CPE desabilitado: porta livre, com o antigo ocupante. */
   liberadas: PortaOcupada[]
 }
 
@@ -54,11 +45,6 @@ const paraOcupada = (cpe: CpeDto, porta: number): PortaOcupada => ({
   contrato: cpe.contract_status,
 })
 
-/**
- * Portas ocupadas e livres de uma CTO, a partir das conexões gravadas nela.
- * CPE desabilitado não ocupa a porta; CPE habilitado ocupa, mesmo com
- * contrato cancelado.
- */
 export function portasDaCto(cpes: CpeDto[], limite: number | null | undefined): PortasDaCto {
   const comPk = cpes.filter((cpe) => cpe.pk != null)
   const ocupadas: PortaOcupada[] = []
@@ -99,11 +85,7 @@ export interface CasaPorta {
   anterior?: PortaOcupada
 }
 
-/**
- * Grade fixa de portas: 1 até o limite da CTO (ou até a maior porta gravada,
- * se passar do limite), cada uma com a sua situação. Sem limite, só as
- * portas gravadas. O tamanho não muda conforme a CTO enche.
- */
+/** Grade de 1 ao limite (ou à maior porta gravada). Sem limite, só as gravadas. */
 export function gradeDePortas(portas: PortasDaCto, limite: number | null | undefined, cpePkAtual: number | undefined): CasaPorta[] {
   const maior = Math.max(0, ...portas.ocupadas.map((o) => o.porta))
   const numeros =

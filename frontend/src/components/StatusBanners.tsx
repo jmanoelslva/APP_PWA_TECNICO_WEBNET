@@ -34,9 +34,7 @@ export default function StatusBanners() {
   } = useRegisterSW({
     onRegisteredSW(_url, registration) {
       if (!registration) return
-      // O navegador só checa sw.js sozinho a cada navegação, no máximo 1x
-      // a cada ~24h — registration.update() ignora esse limite, chamado
-      // ao registrar e sempre que o app volta a primeiro plano.
+      // Força checar o sw.js (o navegador só checa a cada ~24 h).
       registration.update()
       document.addEventListener('visibilitychange', () => {
         if (document.visibilityState === 'visible') registration.update()

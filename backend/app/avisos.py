@@ -1,15 +1,4 @@
-"""
-Avisos de OS nova no celular do técnico (Web Push).
-
-Guarda, em arquivos JSON na pasta AVISOS_DADOS_DIR:
-- inscricoes.json — celulares que ativaram os avisos, por login do técnico
-  (o mesmo login do app, que é o staff_username da OS);
-- os_vistas.json — OS já vistas por técnico, para avisar só das novas e não
-  repetir depois de reiniciar o serviço.
-
-Quem procura OS nova e chama enviar_para() é app/vigia_os.py. Mesmo jeito
-simples de audit.py: processo único, poucos técnicos, sem banco próprio.
-"""
+"""Avisos de OS nova (Web Push). inscricoes.json: celulares por técnico; os_vistas.json: OS já avisadas."""
 
 import json
 import logging
@@ -66,8 +55,7 @@ def _login(usuario: str) -> str:
 
 
 def inscrever(usuario: str, inscricao: dict[str, Any]) -> None:
-    """Liga os avisos neste celular para o técnico. O mesmo celular (endpoint)
-    só fica com um técnico: quem entrou por último."""
+    """Um celular (endpoint) fica só com o último técnico que ativou."""
     endpoint = inscricao["endpoint"]
     with _lock:
         todas: dict[str, list[dict[str, Any]]] = _ler("inscricoes.json", {})
@@ -150,8 +138,7 @@ def texto_os(os_: dict[str, Any], agora: datetime | None = None) -> dict[str, st
 
 
 async def enviar(inscricao: dict[str, Any], aviso: dict[str, str], usuario: str = "") -> bool:
-    """Manda o aviso a um celular. Se o serviço de push diz que ele não existe
-    mais (404/410), sai da lista."""
+    """404/410 do serviço de push: inscrição apagada."""
     try:
         await webpush_async(
             subscription_info={"endpoint": inscricao["endpoint"], "keys": inscricao["keys"]},

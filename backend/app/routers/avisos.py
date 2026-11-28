@@ -13,8 +13,7 @@ from ..sessions import TechnicianSession
 
 router = APIRouter(prefix="/avisos", tags=["avisos"])
 
-# O servidor faz POST no endereço que o celular informa: só os serviços de
-# push dos navegadores, para ninguém usar o backend para chamar outro lugar.
+# Só serviços de push dos navegadores (evita SSRF).
 _SERVICOS_PUSH = (
     "fcm.googleapis.com",            # Chrome / Android
     "push.services.mozilla.com",     # Firefox
@@ -37,8 +36,7 @@ class Chaves(BaseModel):
 class Inscricao(BaseModel):
     endpoint: str = Field(min_length=1, max_length=1000)
     keys: Chaves
-    # Aviso de teste na hora — só quando o técnico liga os avisos, não quando
-    # o app reassocia o celular ao abrir.
+    # Aviso de teste só ao ligar, não ao reassociar.
     confirmar: bool = False
 
 

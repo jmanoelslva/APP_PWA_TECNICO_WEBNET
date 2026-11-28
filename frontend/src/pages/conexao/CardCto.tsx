@@ -1,9 +1,8 @@
-import { lazy, Suspense, useEffect, useRef, useState, type CSSProperties } from 'react'
+import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { LuLocateFixed, LuSave, LuX } from 'react-icons/lu'
 import { ApiError, atualizarDetalhesCpe, type CpeDto, type DpDto } from '../../api/client'
 import { useToast } from '../../components/Toast/useToast'
-import { CORES } from '../../utils/cores'
 import {
   distanciaMetros,
   formatarDistancia,
@@ -24,11 +23,7 @@ function coordenadaTexto(lat?: string, lng?: string): { lat: number; lng: number
   return lat && lng && Number.isFinite(la) && Number.isFinite(ln) && (la || ln) ? { lat: la, lng: ln } : null
 }
 
-/**
- * dp_pk e cpe_dp_port (CTO/porta da CTO), doc oficial de /aaa_ctl/cpe/update.
- * A lista de CTOs vem do próprio sistema (GET /dp/lista), para selecionar em
- * vez de digitar um pk cru.
- */
+/** CTO e porta da conexão (dp_pk, cpe_dp_port), escolhidas da lista de /dp/lista. */
 export default function CardCto({
   cpe,
   dps,
@@ -39,16 +34,14 @@ export default function CardCto({
   onAtualizado: (parcial: Partial<CpeDto>) => void
 }) {
   const { toast } = useToast()
-  // dpBusca é o texto digitado no combobox (filtra a lista enquanto
-  // digita); dpPk só muda quando o técnico clica numa CTO da lista filtrada.
+  // dpBusca é o texto do combobox; dpPk só muda ao escolher.
   const [dpPk, setDpPk] = useState(cpe.dp_pk != null ? String(cpe.dp_pk) : '')
   const [dpBusca, setDpBusca] = useState(cpe.dp_name ?? '')
   const [dpListaAberta, setDpListaAberta] = useState(false)
   // Porta 0 no Controllr = sem porta: mostra o campo vazio.
   const [dpPorta, setDpPorta] = useState(cpe.dp_port ? String(cpe.dp_port) : '')
 
-  // Vindo do Mapa de CTOs ("Usar esta CTO"): ?dp=<pk>&porta=<n> já escolhe
-  // a CTO e a porta no formulário. Não grava: o técnico confere e salva.
+  // ?dp=&porta= (do Mapa de CTOs) preenche o formulário; o técnico salva.
   const [params] = useSearchParams()
   const dpDaUrl = params.get('dp')
   const portaDaUrl = params.get('porta')
@@ -65,36 +58,26 @@ export default function CardCto({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dpDaUrl, portaDaUrl, dps])
   const [salvando, setSalvando] = useState(false)
-  // Localização do técnico (botão "Usar minha localização") — usada só
-  // para sugerir/ordenar a CTO mais próxima por distância, nunca para
-  // selecionar sozinha sem confirmação em caso de dúvida (ver critério em
-  // usarLocalizacaoAtual). precisaoLocalizacaoM é o accuracy (em metros)
-  // relatado pelo GPS na leitura usada — mostrado ao técnico para ele
-  // avaliar a confiança da sugestão.
+  // Leitura do botão "Usar minha localização": ordena por distância; só escolhe sozinho sem ambiguidade.
   const [minhaLocalizacao, setMinhaLocalizacao] = useState<{ lat: number; lng: number } | null>(null)
   const [precisaoLocalizacaoM, setPrecisaoLocalizacaoM] = useState<number | null>(null)
   const [localizando, setLocalizando] = useState(false)
-  // GPS acompanhando o técnico desde que o bloco aparece: o "Você" do mapa
-  // e as distâncias da lista se atualizam sozinhos. A sugestão automática
-  // de CTO continua só no botão (leitura mais precisa, com confirmação).
+  // GPS ao vivo para o mapa e as distâncias; a sugestão fica no botão.
   const aoVivo = useLocalizacaoAoVivo()
   const posicaoTecnico = aoVivo ?? minhaLocalizacao
   const precisaoTecnicoM = aoVivo?.precisaoM ?? precisaoLocalizacaoM
-  // Primeira leitura ao vivo, fixa: centraliza o mapa uma vez só, em vez de
-  // puxar a tela de volta a cada atualização do GPS.
+  // Centraliza só na primeira leitura.
   const [primeiraPosicao, setPrimeiraPosicao] = useState<{ lat: number; lng: number } | null>(null)
   if (aoVivo && !primeiraPosicao) setPrimeiraPosicao({ lat: aoVivo.lat, lng: aoVivo.lng })
 
-  // Centro do mapa: a CTO escolhida; sem coordenada nela, o técnico; senão,
-  // o endereço do cliente.
+  // Centro: CTO escolhida, senão o técnico, senão o endereço.
   const dpSelecionada = dps.find((dp) => String(dp.pk) === dpPk) ?? null
   const cliente = coordenadaTexto(cpe.address_latitude, cpe.address_longitude)
   const centroMapa =
     dpSelecionada?.lat != null && dpSelecionada.lng != null
       ? { lat: dpSelecionada.lat, lng: dpSelecionada.lng }
       : (minhaLocalizacao ?? cliente ?? primeiraPosicao)
-  // Traçado do endereço do cliente até a CTO escolhida no campo (a gravada
-  // ou a que o técnico acabou de tocar), com a porta digitada.
+  // Traçado do endereço até a CTO escolhida, com a porta.
   const ligacoes =
     cliente && dpSelecionada?.lat != null && dpSelecionada.lng != null
       ? [
@@ -145,12 +128,7 @@ export default function CardCto({
       const maisProxima = comCoordenada[0]
       const segundaMaisProxima = comCoordenada[1]
       const precisaoRuim = precisaoM > PRECISAO_MAXIMA_ACEITAVEL_M
-      // Só seleciona sozinho quando o GPS está confiável e não há
-      // ambiguidade real: a CTO mais próxima precisa estar dentro do
-      // raio de erro do GPS (senão o técnico só está "perto", não "na"
-      // CTO), e o "círculo de incerteza" da leitura não pode alcançar a
-      // segunda CTO mais próxima. Em qualquer outro caso é melhor abrir
-      // a lista ordenada por distância e deixar o técnico confirmar.
+      // Escolhe sozinho só se a mais próxima está dentro do erro do GPS e o círculo não alcança a segunda.
       const semAmbiguidade =
         !precisaoRuim &&
         !!maisProxima &&
@@ -348,7 +326,6 @@ export default function CardCto({
       )}
       <button aria-busy={salvando}
         className="botao botao-secundario botao-pequeno botao-largo"
-        style={{ '--botao-cor': CORES.conexao } as CSSProperties}
         onClick={salvar}
         disabled={salvando}
       >

@@ -34,18 +34,10 @@ import CardWifi from './conexao/CardWifi'
 import { statusDoCliente } from '../utils/statusCliente'
 import './Conexao.css'
 
-/**
- * Dados de acesso e sessão de uma conexão (CPE). Esta página só carrega os
- * dados e monta os cartões; cada cartão editável (pages/conexao/) guarda os
- * próprios campos e avisa por onAtualizado quando salva. Os cartões só
- * aparecem com a conexão já carregada, então cada nova carga recomeça os
- * campos com os valores que vieram do Controllr.
- */
+/** Conexão (CPE): carrega e monta os cartões; cada cartão guarda os próprios campos. */
 
 type Aba = 'resumo' | 'roteador' | 'cto' | 'historico'
 
-// Wi-Fi e acesso ao roteador tratam do mesmo equipamento: uma aba só.
-// CTO (fibra) e histórico de conexão ficam separados.
 const ABAS: AbaTela<Aba>[] = [
   { chave: 'resumo', rotulo: 'Resumo' },
   { chave: 'roteador', rotulo: 'Roteador' },
@@ -53,8 +45,6 @@ const ABAS: AbaTela<Aba>[] = [
   { chave: 'historico', rotulo: 'Histórico' },
 ]
 
-// Aba escolhida vale enquanto o app estiver aberto (troca de cliente e
-// continua na mesma parte).
 const CHAVE_ABA = 'webnet-tecnico-aba-conexao'
 
 export default function Conexao() {
@@ -62,8 +52,7 @@ export default function Conexao() {
   const cpePkParam = params.get('cpe_pk')
   const contractPkParam = params.get('contract_pk')
   const usernameParam = params.get('username')
-  // cpe_pk é o mais específico (sem ambiguidade de busca) — prioriza ele
-  // quando vier mais de um parâmetro ao mesmo tempo.
+  // cpe_pk tem prioridade.
   const temParametroInicial = !!cpePkParam || !!usernameParam || !!contractPkParam
   const { toast } = useToast()
 
@@ -93,7 +82,7 @@ export default function Conexao() {
     listarDps()
       .then((resposta) => setDps(resposta.results))
       .catch(() => {
-        /* lista de CTOs é só conveniência para o seletor — se falhar, o técnico ainda pode digitar o pk em outro lugar */
+        /* Lista de CTOs é opcional. */
       })
   }, [])
 
@@ -109,9 +98,7 @@ export default function Conexao() {
   async function carregar() {
     setCarregando(true)
     setErro(null)
-    // Zera a sessão da busca anterior — sem isso, trocar de usuário/CPE
-    // com o card "Sessão online" já carregado ficava mostrando a sessão
-    // ANTIGA. Some agora mesmo antes da nova consulta responder.
+    // Zera a sessão anterior antes da nova consulta.
     setSessao(null)
     setSessaoLidaEm(null)
     setOnuResumo(null)
@@ -119,9 +106,7 @@ export default function Conexao() {
       const resposta = await buscarInicial()
       const cpeCarregado = resposta.results[0] ?? null
       setCpe(cpeCarregado)
-      // Card "Sessão online" carrega junto com o resto dos dados, sem
-      // exigir clique. Sem await de propósito: não trava o carregamento
-      // do resto da tela por causa dessa consulta à parte.
+      // Sem await: não trava o resto da tela.
       if (cpeCarregado?.pk != null) void carregarSessaoOnline(cpeCarregado.pk)
       if (cpeCarregado?.username) void carregarOnuResumo(cpeCarregado.username)
     } catch (excecao) {
@@ -131,8 +116,6 @@ export default function Conexao() {
     }
   }
 
-  // Usado pelo pull-to-refresh. Sem conexão escolhida não há o que
-  // recarregar (a busca por usuário refaz sozinha enquanto se digita).
   async function atualizarTela() {
     if (temParametroInicial) await carregar()
   }
@@ -156,8 +139,7 @@ export default function Conexao() {
       const resposta = await buscarOnu({ username })
       setOnuResumo(resposta.results[0] ?? null)
     } catch {
-      // Resumo é só conveniência — sem cliente vinculado a nenhuma ONU o
-      // card nem aparece, e um erro aqui não deveria travar o resto da tela.
+      // Opcional: erro não trava a tela.
       setOnuResumo(null)
     } finally {
       setCarregandoOnuResumo(false)
@@ -205,7 +187,7 @@ export default function Conexao() {
         )}
 
         {!carregando && erro && (
-          <EstadoErro mensagem={erro} cor={CORES.conexao} onTentarDeNovo={carregar} />
+          <EstadoErro mensagem={erro} onTentarDeNovo={carregar} />
         )}
 
         {temParametroInicial && !carregando && !erro && !cpe && (

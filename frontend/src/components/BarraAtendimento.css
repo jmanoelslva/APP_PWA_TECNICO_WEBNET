@@ -1,5 +1,4 @@
-/* Fixa no topo enquanto a tela rola; ocupa a largura toda (as telas têm
-   20px de margem lateral). */
+/* Fixa no topo, na largura toda (as telas têm 20px de margem). */
 .barra-atendimento {
   position: sticky;
   top: 0;

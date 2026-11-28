@@ -3,11 +3,7 @@ import FaixaSinal from '../../components/FaixaSinal'
 import Skeleton from '../../components/Skeleton'
 import { nivelSinalOnu } from '../../utils/formatacao'
 
-/**
- * Resumo da ONU vinculada ao cliente (se tiver) — buscada pelo usuário
- * PPPoE, jeito confiável já usado na tela de ONU (ver CONTROLLR_API_NOTES.md:
- * cpe_pk sozinho é ambíguo em /fiber_ctl/onu/list). Sem ONU, nada aparece.
- */
+/** ONU do cliente pelo PPPoE (cpe_pk é ambíguo em onu/list). */
 export default function CardOnuResumo({
   onu,
   carregando,

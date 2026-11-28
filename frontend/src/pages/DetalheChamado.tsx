@@ -17,7 +17,6 @@ import {
   type TicketDto,
 } from '../api/client'
 import { formatarDataHora } from '../utils/formatacao'
-import { CORES } from '../utils/cores'
 import './DetalheChamado.css'
 import { useFecharComVoltar } from '../hooks/useFecharComVoltar'
 
@@ -53,13 +52,7 @@ function converterOperacao(dto: OperacaoDto): Mensagem | null {
   }
 }
 
-/**
- * Chamado (ticket) e Ordem de Serviço são dois recursos/endpoints
- * diferentes no Controllr. Esta tela mostra o histórico (mensagens do
- * escritório/cliente e os eventos da OS, que usam a mesma tabela) e,
- * com o chamado aberto, permite enviar mensagem de texto e anexo (foto,
- * galeria ou arquivo — o mesmo endpoint usado pela tela da OS).
- */
+/** Chamado: histórico (mensagens e eventos da OS) e envio de mensagem e anexo. */
 function DetalheChamadoConteudo() {
   const { ticketPk } = useParams<{ ticketPk: string }>()
   const pk = Number(ticketPk)
@@ -83,8 +76,7 @@ function DetalheChamadoConteudo() {
   const [erro, setErro] = useState<string | null>(null)
   const [imagemAberta, setImagemAberta] = useState<string | null>(null)
   useFecharComVoltar(imagemAberta !== null, () => setImagemAberta(null))
-  // Anexos que o navegador não conseguiu mostrar (ex.: foto HEIC do iPhone no
-  // Android, ou o servidor mandou como download): viram link para baixar.
+  // Anexo que o navegador não mostra vira link.
   const [semVisualizacao, setSemVisualizacao] = useState<Set<string>>(() => new Set())
 
   function marcarSemVisualizacao(arquivo: string) {
@@ -222,7 +214,7 @@ function DetalheChamadoConteudo() {
           ))}
 
         {!carregando && erro && (
-          <EstadoErro mensagem={erro} cor={CORES.suporte} onTentarDeNovo={() => carregar(true)} />
+          <EstadoErro mensagem={erro} onTentarDeNovo={() => carregar(true)} />
         )}
 
         {!carregando && !erro && mensagens.length === 0 && (
@@ -374,11 +366,7 @@ function DetalheChamadoConteudo() {
   )
 }
 
-/**
- * Uma instância por chamado: trocar de chamado sem sair da tela (aviso de OS,
- * link, busca) recomeça do zero — sem anexos, checklist, textos ou janelas
- * da anterior presos na tela.
- */
+/** key por chamado: trocar de chamado recomeça o estado. */
 export default function DetalheChamado() {
   const { ticketPk } = useParams<{ ticketPk: string }>()
   return <DetalheChamadoConteudo key={ticketPk} />

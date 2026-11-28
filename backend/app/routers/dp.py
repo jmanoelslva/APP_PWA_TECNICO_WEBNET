@@ -14,20 +14,7 @@ router = APIRouter(prefix="/dp", tags=["dp"])
 
 @router.get("/lista")
 async def listar_dps(ctx: AuthContext = Depends(get_auth_context)) -> dict[str, Any]:
-    # CTOs (Distribution Points) cadastradas no sistema, para selecionar na
-    # tela de detalhes do CPE (campo dp_pk) — só as ativas (dp_status=1).
-    #
-    # NÃO usa model_return=True aqui: Response.cast() faz
-    # `[DP.model_validate(r) for r in results]` numa lista só — se UMA
-    # CTO qualquer não tiver dp_lat/dp_lng/dp_limit (campos obrigatórios
-    # no modelo DP, mas nem toda CTO cadastrada tem coordenada), a
-    # validação de TODA a lista falha e a lista inteira vem vazia para o
-    # técnico, sem erro visível (o front só ignora a falha do combo).
-    # Como só precisamos de pk/nome (+ coordenada, quando existir), pega o
-    # dado cru e não passa pelo modelo rígido.
-    #
-    # cor/limite/ativos/setor alimentam o mapa do bloco CTO (mesmos campos
-    # que o "Mapa - Informações" do painel mostra com Distribuição: Sim).
+    # CTOs ativas, sem o modelo DP (uma CTO sem coordenada derrubaria a lista inteira).
     resposta = await ctx.controllr.dp_list(
         corpo(where_eq("dp_status", 1), limit=2000, sort="dp_name", dir="ASC")
     )
@@ -44,6 +31,7 @@ async def listar_dps(ctx: AuthContext = Depends(get_auth_context)) -> dict[str, 
             "ativos": _inteiro(dp.get("total_cpe_active")),
             "setor": dp.get("ds_name") or None,
             "setor_pk": _inteiro(dp.get("ds_pk")),
+            "descricao": _descricao(dp.get("dp_desc")),
         }
         for dp in resposta.results
         if dp.get("dp_pk") is not None
@@ -52,14 +40,18 @@ async def listar_dps(ctx: AuthContext = Depends(get_auth_context)) -> dict[str, 
 
 
 def _coordenada(valor: Any) -> float | None:
-    # dp_lat/dp_lng nem sempre existem (CTO sem coordenada cadastrada) —
-    # devolve None nesse caso em vez de deixar o handler quebrar.
-    # O painel trata "0"/"0" como "sem coordenada" (app_map_view.js).
+    # Sem coordenada ou 0 = None.
     try:
         numero = float(valor) if valor is not None else None
     except (TypeError, ValueError):
         return None
     return numero if numero else None
+
+
+def _descricao(valor: Any) -> str | None:
+    # O cadastro usa "*" como descrição vazia (o painel exige o campo).
+    texto = str(valor or "").strip()
+    return None if texto in ("", "*") else texto
 
 
 def _inteiro(valor: Any) -> int | None:
@@ -70,21 +62,15 @@ def _inteiro(valor: Any) -> int | None:
 
 
 # ------------------------------------------------------------ edição e cadastro
-#
-# A permissão é do Controllr (ACL do técnico, liberada sob demanda pelo
-# provedor): sem ela o dp/update e o dp/create devolvem 403 "Access Denied",
-# repassado como 403 com mensagem clara (mesmo jeito do financeiro).
+# Permissão é a ACL do técnico no Controllr: 403 vira mensagem clara.
 
-# Padrão de nome da CTO nova, próprio de cada provedor (lido no cadastro
-# real do Controllr). {sigla} vem do setor: SIGLAS_SETOR pelo nome exato ou,
-# senão, o fim do nome "FTTH-VSJ" → "VSJ". Setor sem sigla não aparece.
+# Nome da CTO nova. {sigla}: SIGLAS_SETOR ou o fim do nome do setor ("FTTH-VSJ" → "VSJ").
 FORMATO_NOME_CTO = "{sigla}-CTO-{hub}.{numero}"  # TLA-CTO-2.6
 SIGLAS_SETOR: dict[str, str] = {}
 # No cadastro desta rede dp_id/dp_code/dp_num ficam em branco.
 PREENCHER_IDS_CTO = False
 
-# As 12 cores de fibra (código de cores ABNT, 12 fibras por tubo), no hex
-# que a paleta do painel do Controllr usa.
+# 12 cores ABNT, no hex da paleta do painel.
 CORES_ABNT: dict[str, str] = {
     "#00FF00": "Verde",
     "#FFFF00": "Amarelo",
@@ -103,9 +89,7 @@ CORES_ABNT: dict[str, str] = {
 # Capacidades usadas na rede (dp_limit). Fora disso, recusa.
 CAPACIDADES = {8, 16}
 
-# Campos do formulário da CTO no painel: o dp/update grava o formulário
-# inteiro, então toda edição relê o registro e reenvia tudo, trocando só o
-# que mudou (senão o que faltar fica vazio).
+# dp/update grava o formulário inteiro: relê o registro e reenvia tudo.
 CAMPOS_FORMULARIO = (
     "dp_pk", "dp_status", "dp_type", "dp_color", "dp_limit", "dp_name", "dp_desc",
     "dp_id", "dp_code", "dp_num", "dp_lat", "dp_lng", "ds_pk",
@@ -144,6 +128,8 @@ class EdicaoDp(BaseModel):
     precisao_m: float | None = Field(default=None, ge=0, le=100_000)
     cor: str | None = Field(default=None, max_length=9)
     limite: int | None = None
+    # Vazio volta a ser "*", como no cadastro.
+    descricao: str | None = Field(default=None, max_length=200)
 
 
 class NovaDp(BaseModel):
@@ -155,6 +141,11 @@ class NovaDp(BaseModel):
     lat: float = Field(ge=-90, le=90)
     lng: float = Field(ge=-180, le=180)
     precisao_m: float | None = Field(default=None, ge=0, le=100_000)
+    descricao: str | None = Field(default=None, max_length=200)
+
+
+def _descricao_para_gravar(texto: str | None) -> str:
+    return " ".join((texto or "").split()) or "*"
 
 
 @router.get("/setores")
@@ -216,10 +207,15 @@ async def editar_dp(
         raise HTTPException(status_code=400, detail="Informe latitude e longitude juntas.")
     cor = _cor_valida(payload.cor)
     limite = _capacidade_valida(payload.limite)
-    if payload.lat is None and cor is None and limite is None:
+    atual = await _registro_cru(ctx, dp_pk)
+    descricao = None
+    if payload.descricao is not None:
+        nova = _descricao_para_gravar(payload.descricao)
+        if nova != (str(atual.get("dp_desc") or "").strip() or "*"):
+            descricao = nova
+    if payload.lat is None and cor is None and limite is None and descricao is None:
         raise HTTPException(status_code=400, detail="Nada para alterar.")
 
-    atual = await _registro_cru(ctx, dp_pk)
     formulario = {campo: ("" if atual.get(campo) is None else atual.get(campo)) for campo in CAMPOS_FORMULARIO}
     alvo: dict[str, Any] = {"dp_pk": dp_pk, "cto": atual.get("dp_name")}
     alteracoes: list[dict[str, Any]] = []
@@ -236,6 +232,9 @@ async def editar_dp(
     if limite is not None:
         formulario["dp_limit"] = limite
         alteracoes.append({"rotulo": "Capacidade", "antes": atual.get("dp_limit"), "depois": f"{limite} portas"})
+    if descricao is not None:
+        formulario["dp_desc"] = descricao
+        alteracoes.append({"rotulo": "Descrição", "antes": _descricao(atual.get("dp_desc")), "depois": _descricao(descricao)})
 
     resposta = await ctx.controllr.dp_update(corpo(None, **formulario))
     if _sem_permissao(resposta):
@@ -271,7 +270,7 @@ async def criar_dp(payload: NovaDp, request: Request, ctx: AuthContext = Depends
         "dp_type": DP_TIPO_FTTH,
         "dp_color": cor,
         "dp_limit": limite,
-        "dp_desc": "*",
+        "dp_desc": _descricao_para_gravar(payload.descricao),
         "dp_lat": f"{payload.lat:.8f}",
         "dp_lng": f"{payload.lng:.8f}",
         "ds_pk": payload.setor_pk,
@@ -289,6 +288,7 @@ async def criar_dp(payload: NovaDp, request: Request, ctx: AuthContext = Depends
             {"rotulo": "Setor", "depois": setor["nome"]},
             {"rotulo": "Capacidade", "depois": f"{limite} portas"},
             {"rotulo": "Cor", "depois": CORES_ABNT[cor]},
+            *([{"rotulo": "Descrição", "depois": _descricao(payload.descricao)}] if _descricao(payload.descricao) else []),
             {"rotulo": "Posição", "depois": f"{payload.lat:.6f}, {payload.lng:.6f}{precisao}"},
         ],
     })

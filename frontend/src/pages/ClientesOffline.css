@@ -69,12 +69,6 @@
   color: var(--cor-texto);
 }
 
-.clientes-offline-link {
-  flex-shrink: 0;
-  color: var(--cor-texto-terciario);
-  display: inline-flex;
-}
-
 .clientes-offline-ultima {
   margin: 4px 0 0;
   font-size: 12px;

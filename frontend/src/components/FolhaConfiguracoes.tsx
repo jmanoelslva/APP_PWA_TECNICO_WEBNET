@@ -82,11 +82,7 @@ const OPCOES_TEMA: { valor: EscolhaTema; rotulo: string; Icone: IconType }[] = [
   { valor: 'auto', rotulo: 'Automático', Icone: LuSunMoon },
 ]
 
-/**
- * Configurações do app (abre pelo avatar da tela inicial): aparência,
- * avisos de OS, instalar e sair, com a versão no rodapé. Substitui o menu
- * suspenso do avatar, que já tinha 5 itens e 2 interruptores.
- */
+/** Configurações (pelo avatar): aparência, avisos, instalar, sair e versão. */
 export default function FolhaConfiguracoes({
   aberto,
   usuario,

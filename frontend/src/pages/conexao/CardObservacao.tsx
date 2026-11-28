@@ -1,8 +1,7 @@
-import { useState, type CSSProperties } from 'react'
+import { useState } from 'react'
 import { LuSave } from 'react-icons/lu'
 import { ApiError, atualizarDetalhesCpe, type CpeDto } from '../../api/client'
 import { useToast } from '../../components/Toast/useToast'
-import { CORES } from '../../utils/cores'
 import CartaoConexao from './CartaoConexao'
 
 /** cpe_obs, doc oficial de /aaa_ctl/cpe/update. Salvar próprio, separado da CTO. */
@@ -44,7 +43,6 @@ export default function CardObservacao({
       </div>
       <button aria-busy={salvando}
         className="botao botao-secundario botao-pequeno botao-largo"
-        style={{ '--botao-cor': CORES.conexao } as CSSProperties}
         onClick={salvar}
         disabled={salvando}
       >

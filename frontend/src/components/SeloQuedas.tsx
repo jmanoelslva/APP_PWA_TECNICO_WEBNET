@@ -3,11 +3,7 @@ import { LuActivity } from 'react-icons/lu'
 import { buscarHistoricoSessoesCpe } from '../api/client'
 import { DIAS_QUEDAS, periodoQuedas, resumirQuedas, type ResumoQuedas } from '../utils/quedas'
 
-/**
- * "Caiu N vezes em 7 dias" — sessões encerradas no histórico do PPPoE.
- * Só aparece a partir de 3 quedas; abaixo disso, ou se a consulta falhar,
- * não mostra nada (não é um erro para o técnico).
- */
+/** "Caiu N vezes em 7 dias" (a partir de 3). Falha não mostra nada. */
 export default function SeloQuedas({ cpePk }: { cpePk: number }) {
   const [resumo, setResumo] = useState<ResumoQuedas | null>(null)
 

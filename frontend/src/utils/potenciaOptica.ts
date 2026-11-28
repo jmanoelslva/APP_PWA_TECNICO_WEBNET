@@ -1,6 +1,4 @@
-// Calculadora de potência óptica (Ferramentas): sinal esperado na ONU a
-// partir da potência da porta PON e das perdas do caminho, comparado com
-// as faixas do app (nivelSinalOnu) e com o sinal lido.
+// Sinal esperado na ONU pela potência da PON e as perdas.
 
 import { nivelSinalOnu, type NivelSinal } from './formatacao'
 
@@ -14,8 +12,7 @@ export const PERDA_SPLITTER: Record<string, number> = {
   '1:64': 20.5,
 }
 
-// Valores de referência de projeto (ajustáveis na tela só pelo que muda
-// em campo: potência, splitters, distância, conectores e emendas).
+// Referências de projeto; na tela muda só o que varia em campo.
 export const PERDA_KM_1490 = 0.3 // dB/km, sentido OLT → ONU
 export const PERDA_CONECTOR = 0.5 // dB por conector
 export const PERDA_EMENDA = 0.1 // dB por fusão

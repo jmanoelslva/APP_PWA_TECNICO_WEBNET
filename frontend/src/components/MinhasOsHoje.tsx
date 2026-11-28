@@ -21,12 +21,7 @@ function tituloOs(os: OrdemServicoDto): string {
   return os.task_name ?? (os.op_desc?.trim() || `OS do chamado #${os.ticket_pk ?? '-'}`)
 }
 
-/**
- * "Minhas OS de hoje" na tela inicial: a próxima OS em destaque (rota,
- * ligar, WhatsApp, abrir) e as demais do dia em linhas curtas. "Minhas" = OS
- * em que o técnico logado é o responsável (staff_username), ver
- * backend/app/routers/ordens_servico.py.
- */
+/** Minhas OS de hoje: a próxima em destaque e as demais em linhas. */
 export interface ResumoDoDia {
   total: number
   atrasadas: number
@@ -40,8 +35,7 @@ export default function MinhasOsHoje({ onResumo }: { onResumo?: (resumo: ResumoD
   // Sem OS hoje: a próxima agendada para os dias seguintes (mesma lista).
   const [futura, setFutura] = useState<OrdemServicoDto | null>(null)
   const [erro, setErro] = useState(false)
-  // Endereço completo (coordenadas) e telefone só da próxima OS — uma
-  // chamada a mais ao Controllr, não uma por OS.
+  // Endereço e telefone só da próxima OS.
   const [endereco, setEndereco] = useState<EnderecoDto | null>(null)
   const [telefones, setTelefones] = useState<string[]>([])
 
@@ -85,8 +79,7 @@ export default function MinhasOsHoje({ onResumo }: { onResumo?: (resumo: ResumoD
     if (os.ticket_pk) navigate(`/os/${os.ticket_pk}`, { state: { os }, viewTransition: true })
   }
 
-  // Falha ao carregar não deve atrapalhar a tela inicial: some o bloco e
-  // a lista completa continua em OS / Suporte.
+  // Falha esconde o bloco.
   if (erro) return null
 
   if (itens === null) {

@@ -1,4 +1,4 @@
-import { useEffect, useState, type CSSProperties } from 'react'
+import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { LuCable, LuPower, LuRefreshCw, LuTrash2 } from 'react-icons/lu'
 import { ApiError, atualizarInfoOnu, buscarOnu, reiniciarOnu, removerOnu, renomearOnu, type OnuDto } from '../api/client'
@@ -22,28 +22,20 @@ import BarraAtendimento from '../components/BarraAtendimento'
 
 type AbaOnu = 'sinal' | 'credenciais' | 'equipamento'
 
-// Reiniciar/remover ficam na aba Equipamento, longe do toque acidental de
-// quem só veio olhar o sinal.
+// Reiniciar/remover longe do toque acidental.
 const ABAS: Aba<AbaOnu>[] = [
   { chave: 'sinal', rotulo: 'Sinal' },
   { chave: 'credenciais', rotulo: 'Credenciais' },
   { chave: 'equipamento', rotulo: 'Equipamento' },
 ]
 
-/**
- * Sinal óptico e status da ONU, e as ações nela (atualizar, reiniciar,
- * remover, renomear, registrar cliente). Esta página carrega a ONU e faz as
- * ações; os cartões e modais ficam em pages/onu/.
- */
+/** ONU: sinal, status e ações; cartões e modais em pages/onu/. */
 export default function OnuStatus() {
   const [params, setParams] = useSearchParams()
   const cpePkParam = params.get('cpe_pk')
   const usernameParam = params.get('username')
   const serialParam = params.get('serial')
-  // Usuário PPPoE do CPE é o jeito confiável de achar a ONU de um
-  // cliente (ver backend/app/routers/onu.py) — cpe_pk sozinho é
-  // ambíguo em /fiber_ctl/onu/list e já causou mostrar a ONU de outro
-  // cliente. Prioriza username quando os dois vierem informados.
+  // PPPoE é o jeito confiável de achar a ONU (cpe_pk é ambíguo); tem prioridade.
   const temParametroInicial = !!usernameParam || !!serialParam || !!cpePkParam
   const { toast } = useToast()
   const [aba, setAba] = useAbaLembrada('webnet-tecnico-aba-onu', ABAS)
@@ -58,20 +50,14 @@ export default function OnuStatus() {
   const [erro, setErro] = useState<string | null>(null)
   const [onu, setOnu] = useState<OnuDto | null>(null)
   const [atualizando, setAtualizando] = useState(false)
-  // Reiniciar/Remover — endpoints não documentados na doc oficial.
-  // Confirmação em 2 passos sempre, já que os dois afetam a conexão do
-  // cliente na hora.
+  // Reiniciar/remover (sem doc), com confirmação.
   const [confirmandoAcao, setConfirmandoAcao] = useState<'reiniciar' | 'remover' | null>(null)
   const [executandoAcao, setExecutandoAcao] = useState(false)
   const [registrandoCliente, setRegistrandoCliente] = useState(false)
   // Nome atual ao abrir o "Renomear"; null = modal fechado.
   const [renomeando, setRenomeando] = useState<string | null>(null)
   const [salvandoNome, setSalvandoNome] = useState(false)
-  // Antes de reiniciar/remover/associar/renomear, releem a ONU do zero —
-  // mesmo efeito que o técnico buscar de novo manualmente (contornava um
-  // bug observado em produção: os identificadores olt_pk/slot/port/onu_id
-  // às vezes vêm incompletos na primeira leitura da ONU, e uma segunda
-  // busca sempre trazia os dados corretos).
+  // Relê a ONU antes de agir: a 1ª leitura às vezes traz OSPO incompleto.
   const [atualizandoAntesDaAcao, setAtualizandoAntesDaAcao] = useState(false)
 
   useEffect(() => {
@@ -97,16 +83,12 @@ export default function OnuStatus() {
   }
 
   async function atualizarAgora() {
-    // onu.pk (onu_pk) vem 0 pra ONU registrada na OLT mas ainda sem
-    // cliente vinculado — 0 é um pk válido aqui, não "faltando". Usar
-    // "!onu.pk" (falsy) tratava esse caso real como dado insuficiente.
+    // onu.pk 0 é válido (ONU sem cliente).
     if (!onu || onu.pk == null || onu.olt_pk == null || !onu.sn || onu.slot == null || onu.pon == null || onu.id == null) {
       toast('Dados insuficientes para atualizar esta ONU.')
       return
     }
     setAtualizando(true)
-    // Reconecta a OLT antes de reler (força ela a recarregar os dados) —
-    // demora de propósito (~45s), ver backend/app/routers/onu.py.
     toast('Reconectando a OLT e aguardando atualizar — isso leva cerca de 1 minuto.', 'info')
     try {
       await atualizarInfoOnu(onu.pk, {
@@ -195,8 +177,6 @@ export default function OnuStatus() {
   async function executarAcao() {
     const acao = confirmandoAcao
     const ospo = dadosOspo()
-    // onu.pk (onu_pk) vem 0 pra ONU sem cliente vinculado — válido aqui,
-    // não "faltando" (ver comentário em atualizarAgora).
     if (!acao || !onu || onu.pk == null || !ospo) {
       toast('Dados insuficientes para executar esta ação.')
       setConfirmandoAcao(null)
@@ -228,8 +208,7 @@ export default function OnuStatus() {
   const semSelecao = !temParametroInicial && !onu && !carregando
   const tempoDesdeColeta = onu ? formatarTempoDesdeColeta(onu.info_timer) : null
 
-  // Puxar para atualizar relê a mesma ONU, sem a reconexão demorada da OLT
-  // que o "Atualizar agora" faz.
+  // Relê sem reconectar a OLT.
   async function recarregar() {
     if (temParametroInicial) await carregar(buscarInicial)
   }
@@ -274,7 +253,7 @@ export default function OnuStatus() {
         )}
 
         {!carregando && erro && (
-          <EstadoErro mensagem={erro} cor={CORES.onu} onTentarDeNovo={() => carregar(buscarInicial)} />
+          <EstadoErro mensagem={erro} onTentarDeNovo={() => carregar(buscarInicial)} />
         )}
 
         {temParametroInicial && !carregando && !erro && !onu && (
@@ -291,9 +270,6 @@ export default function OnuStatus() {
                 {!atualizando && tempoDesdeColeta && <p className="onu-ultima-coleta">Dados coletados {tempoDesdeColeta}</p>}
                 <button
                   className="botao botao-secundario botao-bloco"
-                  // Verde (sucesso) — diferencia do leitor de QR e do "Reiniciar"
-                  // da aba Equipamento, que usam CORES.onu (ver onu-acoes-onu).
-                  style={{ '--botao-cor': CORES.sucesso } as CSSProperties}
                   onClick={atualizarAgora}
                   disabled={atualizando}
                 >
@@ -318,7 +294,6 @@ export default function OnuStatus() {
                   <button
                     type="button"
                     className="botao botao-secundario"
-                    style={{ '--botao-cor': CORES.onu } as CSSProperties}
                     onClick={() => abrirDepoisDeReler(() => setConfirmandoAcao('reiniciar'))}
                     disabled={executandoAcao || atualizandoAntesDaAcao}
                   >

@@ -47,9 +47,6 @@ function saudacaoPorHorario(nome: string): string {
   return `${periodo}, ${nome}!`
 }
 
-// Atalhos em lista, cada um com uma informação útil. Sem "OS / Suporte",
-// Conexão e ONU (já estão na barra de baixo) e sem "Clientes" (é a busca
-// do topo).
 function plural(n: number, um: string, varios: string): string {
   return n === 1 ? `1 ${um}` : `${n} ${varios}`
 }
@@ -59,8 +56,7 @@ function textoHoje(): string {
   return new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: '2-digit' })
 }
 
-// Lista inteira de offline (uma ida, até 500) para contar também as CTOs
-// com mais de um cliente offline, como no alerta da tela Clientes Offline.
+// Lista inteira (até 500) para contar também as CTOs com mais de um offline.
 async function lerOffline(): Promise<{ total: number; ctos: number }> {
   const resposta = await listarCpeOffline({ start: 0, limit: 500 })
   return { total: resposta.total, ctos: ctosComVariosOffline(resposta.results).length }
@@ -75,11 +71,8 @@ export default function Home() {
   const coletorOlt = useColetorOlt()
   // Resumo do dia embaixo da saudação (vem de "Minhas OS de hoje").
   const [resumoDia, setResumoDia] = useState<ResumoDoDia | null>(null)
-  // Barra "X de Y OS concluídas": vem de rota própria porque a lista de OS
-  // tira as finalizadas/fechadas (ver backend ordens_servico.py::resumo_do_dia).
+  // Rota própria: a lista de OS tira as finalizadas.
   const [progresso, setProgresso] = useState<{ total: number; concluidas: number } | null>(null)
-  // Quantos clientes estão offline agora e quantas CTOs têm mais de um
-  // offline (provável problema coletivo) — atalho "Clientes Offline".
   const [totalOffline, setTotalOffline] = useState<number | null>(null)
   const [ctosComProblema, setCtosComProblema] = useState(0)
   function aplicarOffline(resumo: { total: number; ctos: number }) {
@@ -97,16 +90,9 @@ export default function Home() {
           ? 'Notificações bloqueadas nas configurações do celular'
           : null
 
-  // Mesmo combobox de busca ao vivo já usado em Conexão (usuário PPPoE) e
-  // ONU/CTO: digita um pedaço do nome/contrato/documento e a lista vai
-  // filtrando no backend com debounce, sem precisar apertar buscar nem
-  // sair da Home para ver o resultado — clicar num item já leva direto
-  // para o cliente. Sem botão de buscar (lupa): o combobox já cobre a busca
-  // sozinho; Enter no campo ainda leva para tela de busca completa, útil
-  // quando há muitos resultados para rolar.
+  // Busca ao vivo no topo; Enter abre a busca completa.
   const [busca, setBusca] = useState('')
-  // Busca geral: cliente + ONU pelo serial (prefixo) + conexão pelo
-  // usuário PPPoE, em paralelo. Texto com espaço é nome: só cliente.
+  // Cliente, ONU pelo serial e conexão pelo PPPoE, em paralelo. Texto com espaço = nome.
   const [resultadosBusca, setResultadosBusca] = useState<BuscaClienteResultado[]>([])
   const [onusBusca, setOnusBusca] = useState<OnuDto[]>([])
   const [conexoesBusca, setConexoesBusca] = useState<CpeDto[]>([])
@@ -115,8 +101,7 @@ export default function Home() {
   // Leitor pela câmera (etiqueta da ONU: código de barras ou QR).
   const [lendoCodigo, setLendoCodigo] = useState(false)
 
-  // Muda a cada "puxar para atualizar" — remonta MinhasOsHoje, que relê a
-  // lista sozinha ao montar.
+  // Muda a cada "puxar para atualizar" e remonta MinhasOsHoje.
   const [recarga, setRecarga] = useState(0)
 
   useEffect(() => {
@@ -189,9 +174,6 @@ export default function Home() {
   function aoBuscar(evento: FormEvent) {
     evento.preventDefault()
     const termo = busca.trim()
-    // Mesmo parâmetro que BuscaCliente.tsx já lê sozinho ao montar
-    // (?busca=...) — chegar lá com o termo na URL já dispara a busca,
-    // sem precisar digitar de novo na outra tela.
     navigate(termo ? `/clientes?busca=${encodeURIComponent(termo)}` : '/clientes', { viewTransition: true })
   }
 
@@ -482,11 +464,7 @@ export default function Home() {
           onCancelar={() => setConfirmarSairAberto(false)}
           onConfirmar={() => {
             setConfirmarSairAberto(false)
-            // RotaProtegida já redireciona pro /login sozinho assim que
-            // "logado" vira false (ver RotaProtegida.tsx) — navegar aqui
-            // manualmente, sem esperar sair() terminar, desmontaria a tela
-            // antes do POST /auth/logout ser disparado. Os avisos de OS
-            // continuam ligados (só o interruptor do avatar desliga).
+            // Sem navigate: RotaProtegida redireciona depois do logout.
             sair()
           }}
         />

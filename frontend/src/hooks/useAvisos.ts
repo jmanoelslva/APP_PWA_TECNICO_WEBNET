@@ -4,16 +4,7 @@ import { useToast } from '../components/Toast/useToast'
 import { base64UrlParaBytes } from '../utils/base64'
 import { ehIos, jaInstalado } from './usePwaInstall'
 
-/**
- * Avisos de OS nova neste celular (Web Push) — interruptor no menu do avatar
- * (Home.tsx). Quem detecta OS nova e manda o aviso é o backend
- * (app/vigia_os.py); aqui só se pede a permissão e se cadastra o celular.
- *
- * - indisponivel: servidor sem avisos configurados (o item nem aparece);
- * - sem-suporte: navegador sem notificação;
- * - instalar: iPhone só recebe com o app instalado na tela inicial;
- * - bloqueado: o técnico negou a permissão (só volta pelas configurações).
- */
+/** Avisos de OS nova (Web Push): permissão e cadastro do celular; o envio é do backend (vigia_os.py). */
 export type EstadoAvisos = 'carregando' | 'indisponivel' | 'sem-suporte' | 'instalar' | 'bloqueado' | 'desligado' | 'ligado'
 
 function navegadorSuporta(): boolean {
@@ -58,8 +49,7 @@ export function useAvisos() {
         const inscricao = await inscricaoAtual()
         if (cancelado) return
         if (inscricao && Notification.permission === 'granted') {
-          // Reassocia este celular a quem está logado agora (outro técnico
-          // pode ter entrado no mesmo aparelho) — sem aviso de confirmação.
+          // Reassocia o celular a quem está logado, sem aviso.
           await inscreverAvisos(inscricao.toJSON()).catch(() => {})
           setEstado('ligado')
         } else {

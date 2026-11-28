@@ -10,9 +10,7 @@ const { version } = JSON.parse(
 
 // https://vite.dev/config/
 export default defineConfig({
-  // Versão exibida na tela de login (Login.tsx) — segue o
-  // Versionamento Semântico (https://semver.org/lang/pt-BR/) e a
-  // fonte da verdade é o campo "version" do package.json.
+  // Versão do package.json (SemVer).
   define: {
     __APP_VERSION__: JSON.stringify(version),
   },
@@ -20,25 +18,16 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      // Registro manual via useRegisterSW (StatusBanners.tsx) — mesmo
-      // motivo do app cliente: skipWaiting/clientsClaim trocam o service
-      // worker sozinhos, mas isso não troca os módulos JS já carregados
-      // numa aba aberta, então ainda é preciso avisar e deixar o técnico
-      // decidir a hora de recarregar.
+      // Registro manual (useRegisterSW em StatusBanners.tsx).
       injectRegister: false,
       workbox: {
-        // Nunca cachear /api/* — dados dinâmicos e ligados à sessão do
-        // técnico (clientes, OS, conexão, ONU).
-        // /olt/ é o Coletor de OLTs (outro app, mesmo domínio, opcional): o
-        // service worker não pode responder essas navegações com o
-        // index.html do técnico.
+        // Nunca cachear /api/*; /olt/ é outro app.
         navigateFallbackDenylist: [/^\/api\//, /^\/olt(\/|$)/],
         // Padrão (js/css/html) + a fonte Inter local, para abrir já com ela.
         globPatterns: ['**/*.{js,css,html,woff2}'],
         skipWaiting: true,
         clientsClaim: true,
-        // Avisos de OS nova (Web Push): o "push" e o toque no aviso ficam em
-        // public/push-sw.js, carregado dentro do service worker gerado.
+        // Push e toque no aviso em public/push-sw.js.
         importScripts: ['push-sw.js'],
       },
       manifest: {
@@ -49,9 +38,7 @@ export default defineConfig({
         id: '/',
         start_url: '/',
         display: 'standalone',
-        // Cor da tela de abertura (só aceita uma): a escura pisca menos que
-        // um clarão para quem usa o tema escuro; o index.html pinta o fundo
-        // do tema certo logo em seguida.
+        // Splash na cor da marca.
         background_color: '#236085',
         theme_color: '#236085',
         icons: [
@@ -63,14 +50,10 @@ export default defineConfig({
     }),
   ],
   server: {
-    // Escuta em todas as interfaces de rede — dá para abrir o app a partir
-    // do celular do técnico na mesma Wi-Fi usando o IP local da máquina.
+    // Acessível pelo IP local na mesma rede.
     host: true,
     proxy: {
-      // Em desenvolvimento, o navegador só fala com o Vite — ele repassa
-      // para o backend FastAPI local. Sem cookieDomainRewrite/xfwd: aqui é
-      // proxy simples para o NOSSO backend (não o Controllr direto), que já
-      // roda na mesma máquina.
+      // Proxy do Vite para o backend local.
       '/api': {
         target: 'http://localhost:8000',
         changeOrigin: true,

@@ -1,6 +1,4 @@
-// Endereço para abrir o acesso web do roteador do cliente: IP da conexão
-// + porta gravada no acesso ao roteador (cpe_access_port). Só IPv4 — o
-// acesso remoto é pelo IP da sessão PPPoE.
+// Acesso web do roteador: IPv4 da sessão + cpe_access_port.
 
 const IPV4 = /^(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}$/
 const PORTAS_HTTPS = new Set([443, 8443])

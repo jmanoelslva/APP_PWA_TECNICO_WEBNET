@@ -1,16 +1,5 @@
-"""
-Vigia de OS nova: o Controllr não avisa (sem webhook), então o backend
-pergunta de tempos em tempos (AVISOS_INTERVALO_SEGUNDOS) quais OS estão em
-aberto, com um usuário de consulta próprio (CONTROLLR_CONSULTA_*), e avisa o
-técnico responsável (staff_username) de cada OS que não tinha visto antes.
-
-"Vista" é o par OS + técnico: uma OS passada de um técnico para outro conta
-como nova para quem recebeu. Na primeira vez (sem os_vistas.json) só
-memoriza o que já existe, para não disparar dezenas de avisos de uma vez.
-
-Roda dentro do próprio processo do backend (main.py, um processo só — ver
-deploy/install.sh), como uma tarefa em segundo plano.
-"""
+"""Vigia de OS nova: consulta periódica com usuário próprio e avisa o técnico responsável. "Vista" = OS + técnico. Na
+1ª vez só memoriza."""
 
 import asyncio
 import logging
@@ -34,11 +23,9 @@ logger = logging.getLogger(__name__)
 
 _POR_PAGINA = 500
 _MAX_PAGINAS = 20
-# Muitas OS novas de uma vez para o mesmo técnico (ex.: escritório passou a
-# agenda de outro para ele): um aviso só, com a quantidade.
+# Acima disto, um aviso só com a quantidade.
 _MAX_AVISOS_SEPARADOS = 3
-# Login do usuário de consulta recusado: espera mais antes de tentar de novo,
-# para não bloquear a conta no Controllr por excesso de tentativas.
+# Login recusado: espera mais para não bloquear a conta.
 _ESPERA_APOS_LOGIN_RECUSADO_S = 600
 # Nome do cookie do vigia no store de sessões (sobrevive a reinício).
 _EXTRA_COOKIE = "vigia_os_cookie"
@@ -109,9 +96,7 @@ async def verificar(ordens: list[dict[str, Any]]) -> int:
 
 async def rodar() -> None:
     """Laço do vigia, até o serviço parar."""
-    # Cookie guardado do reinício anterior: o usuário de consulta não sai e
-    # entra de novo no Controllr a cada atualização do app. Se ele tiver
-    # caído (lease), a primeira consulta falha e o laço entra de novo.
+    # Reusa o cookie guardado; se caiu, a 1ª consulta falha e loga de novo.
     cookie: str | None = sessions.ler_extra(_EXTRA_COOKIE)
     logger.info("Vigia de OS ligado: a cada %ss, usuário de consulta %r",
                 AVISOS_INTERVALO_SEGUNDOS, CONTROLLR_CONSULTA_USUARIO)
@@ -148,7 +133,6 @@ async def rodar() -> None:
                 sessions.guardar_extra(_EXTRA_COOKIE, None)
             await asyncio.sleep(espera)
     finally:
-        # Com sessões persistentes, o cookie fica guardado para o próximo
-        # início (reinício por atualização); sem elas, sai do Controllr.
+        # Sem sessões persistentes, sai do Controllr.
         if cookie is not None and not sessions.persistente():
             await encerrar_sessao_controllr(CONTROLLR_CONSULTA_USUARIO, cookie)

@@ -20,12 +20,7 @@ interface Posicao {
   precisao: number
 }
 
-/**
- * Cadastrar CTO nova ou editar posição, cor e capacidade de uma CTO. A
- * posição é sempre o GPS do técnico parado ao lado da caixa. Gravar
- * depende da ACL do técnico no Controllr (liberada sob demanda): sem ela,
- * o servidor devolve a mensagem e nada muda.
- */
+/** Cadastro e edição de CTO pelo GPS do técnico. Gravar depende da ACL no Controllr. */
 export default function ModalCto({
   dp,
   lerPosicaoAoAbrir = false,
@@ -56,6 +51,7 @@ export default function ModalCto({
   const [setorPk, setSetorPk] = useState('')
   const [hub, setHub] = useState('')
   const [numero, setNumero] = useState('')
+  const [descricao, setDescricao] = useState(dp?.descricao ?? '')
 
   useEffect(() => {
     if (!nova) return
@@ -100,9 +96,11 @@ export default function ModalCto({
   const corForaDoPadrao = !!dp?.cor && !!corAtual && dp.cor.toUpperCase() !== corAtual.hex
   const mudouCor = !!cor && cor !== (dp?.cor ?? '').toUpperCase()
   const mudouCapacidade = !nova && Number(capacidade) !== dp?.limite
+  const descricaoLimpa = descricao.replace(/\s+/g, ' ').trim()
+  const mudouDescricao = !nova && descricaoLimpa !== (dp?.descricao ?? '')
   const podeSalvar = nova
     ? !!nomeNovo && !nomeRepetido && !!cor && !!posicao && !lendo
-    : !lendo && (mudouCor || mudouCapacidade || !!posicao)
+    : !lendo && (mudouCor || mudouCapacidade || mudouDescricao || !!posicao)
 
   async function salvar() {
     if (!podeSalvar) return
@@ -118,12 +116,14 @@ export default function ModalCto({
           lat: (posicao as Posicao).lat,
           lng: (posicao as Posicao).lng,
           precisao_m: (posicao as Posicao).precisao,
+          ...(descricaoLimpa ? { descricao: descricaoLimpa } : {}),
         })
         toast(`${r.nome} cadastrada.`, 'sucesso')
       } else {
         await editarDp((dp as DpDto).pk, {
           ...(mudouCor ? { cor: cor as string } : {}),
           ...(mudouCapacidade ? { limite: Number(capacidade) } : {}),
+          ...(mudouDescricao ? { descricao: descricaoLimpa } : {}),
           ...(posicao ? { lat: posicao.lat, lng: posicao.lng, precisao_m: posicao.precisao } : {}),
         })
         toast(`${(dp as DpDto).name} atualizada.`, 'sucesso')
@@ -174,6 +174,18 @@ export default function ModalCto({
             </p>
           </>
         )}
+
+        <label className="modal-cto-campo">
+          <span>Descrição</span>
+          <textarea
+            className="campo modal-cto-descricao"
+            rows={2}
+            maxLength={200}
+            placeholder="Ex.: poste em frente à praça"
+            value={descricao}
+            onChange={(e) => setDescricao(e.target.value.replace(/\n/g, ' '))}
+          />
+        </label>
 
         <span className="modal-cto-rotulo">Capacidade</span>
         <FiltroSegmentado

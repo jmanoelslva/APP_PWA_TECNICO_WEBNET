@@ -200,19 +200,6 @@
   flex-shrink: 0;
 }
 
-.detalhe-ordem-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  color: var(--cor-suporte);
-  font-weight: 700;
-  text-decoration: none;
-}
-
-/* Links do endereço (Google Maps e rota): lado a lado com espaço, quebram
-   linha em tela estreita. */
-
-
 .detalhe-ordem-chip {
   display: inline-flex;
   align-items: center;
@@ -408,8 +395,6 @@
   color: var(--cor-erro);
 }
 
-/* Cabeçalho da OS: título, cliente, chips (quando/atraso/tarefa/números),
-   linha de etapas e contato — tudo o que o técnico precisa sem rolar. */
 .detalhe-ordem-cabecalho {
   display: flex;
   flex-direction: column;
@@ -434,8 +419,7 @@
   color: var(--cor-texto-secundario);
 }
 
-/* Agendada / Serviço / OS / Chamado: rótulo à esquerda, valor à direita,
-   uma linha cada (valor longo corta com reticências, sem quebrar). */
+/* Rótulo à esquerda, valor à direita, uma linha. */
 .detalhe-ordem-dados {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
@@ -513,8 +497,6 @@
   background: var(--cor-primaria);
 }
 
-/* Rota, Ligar, WhatsApp, Chamado e Mapa: grade padrão (.grade-acoes, em
-   index.css); aqui só o número embaixo do rótulo e o toque. */
 .detalhe-ordem-contato .acoes-contato-telefone {
   display: block;
   font-size: 10px;
@@ -583,9 +565,7 @@
   font-size: 15px;
 }
 
-/* Com a barra de ação no rodapé, o toast sobe acima dela (10 + 52 + 10
-   de altura + 1 de borda) para não cobrir o botão. "html" garante que vence
-   a regra de index.css. */
+/* Toast acima da barra de ação do rodapé. */
 html body:has(.detalhe-ordem-barra-acao) {
   --altura-toast-base: calc(var(--altura-nav) + 73px);
 }
@@ -619,10 +599,4 @@ html body:has(.detalhe-ordem-barra-acao) {
   margin: 4px 0 10px;
   font-size: 12px;
   color: var(--cor-texto-secundario);
-}
-
-/* "Ver conexão completa": botão sozinho no pé do cartão ocupa a largura toda. */
-.detalhe-ordem-ver-conexao {
-  margin-top: 12px;
-  text-decoration: none;
 }

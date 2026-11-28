@@ -1,10 +1,7 @@
 import { LuExternalLink } from 'react-icons/lu'
 import { urlRoteador } from '../utils/roteador'
 
-/**
- * IP do cliente com o ícone que abre o roteador no navegador, na porta
- * gravada no acesso ao roteador. Sem IPv4 válido mostra só o texto.
- */
+/** IP com o atalho para o roteador (só IPv4). */
 export default function IpComAcesso({ ip, porta }: { ip: string | null | undefined; porta?: number | null }) {
   const url = urlRoteador(ip, porta)
   if (!url) return <>{ip || '—'}</>

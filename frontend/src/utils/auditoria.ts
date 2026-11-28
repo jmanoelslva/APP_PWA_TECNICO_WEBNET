@@ -1,12 +1,7 @@
 import type { EventoAuditoria } from '../api/client'
 import { OPCOES_CRIPTOGRAFIA_WIFI } from './formatacao'
 
-/**
- * Como cada evento da auditoria aparece na tela (pages/Auditoria.tsx):
- * o que mudou (antes → depois) separado de onde mudou (OLT, ONU, cliente).
- * Registros antigos só têm parte desses campos — cada item só aparece
- * quando o dado existe.
- */
+/** Como cada evento aparece: o que mudou separado de onde. */
 
 export type Alvo = Record<string, unknown>
 
@@ -30,7 +25,7 @@ function rotuloCriptografia(v: unknown): string {
   return OPCOES_CRIPTOGRAFIA_WIFI.find((o) => o.valor === Number(v))?.rotulo ?? String(v)
 }
 
-/** "antes → depois" só quando os dois existem e são diferentes; só o novo quando não há o antigo. */
+/** Antes → depois só quando os dois existem e diferem. */
 function mudou(rotulo: string, antes: unknown, depois: unknown, formatar = texto): Mudanca | null {
   if (!tem(depois)) return null
   if (tem(antes) && formatar(antes) === formatar(depois)) return null
@@ -42,15 +37,13 @@ function senha(rotulo: string, alterada: unknown): Mudanca | null {
   return { rotulo, depois: alterada ? 'alterada' : 'mantida', nota: alterada ? 'o valor não é gravado' : undefined }
 }
 
-// Na associação de ONU o cliente e o PPPoE SÃO a mudança (antes → depois);
-// nas outras ações são só o "onde" (detalhes).
+// Na associação de ONU, cliente e PPPoE são a mudança.
 const ASSOCIACAO = 'onu.associar_cliente'
 
 // Nas etapas da OS o texto é a descrição do atendimento; em cancelar/reabrir e desfazer, o motivo.
 const ETAPAS_OS = new Set(['os.responder', 'os.iniciar', 'os.finalizar'])
 
-// Ações gravadas com a lista pronta (endereço, telefone, localização):
-// [{ rotulo, antes?, depois }] montada pelo backend.
+// Lista pronta montada pelo backend.
 function lista(alvo: Alvo): Mudanca[] {
   if (!Array.isArray(alvo.alteracoes)) return []
   return alvo.alteracoes
@@ -155,10 +148,7 @@ export function hora(quando: string): string {
 
 export type PeriodoAuditoria = 'tudo' | 'hoje' | '7' | '30' | 'periodo'
 
-/**
- * Datas "AAAA-MM-DD" (inclusivas) de um período rápido da Auditoria. "tudo"
- * não filtra; "periodo" usa o que o técnico escolheu nos campos De/Até.
- */
+/** Datas AAAA-MM-DD do período; "tudo" não filtra. */
 export function datasDoPeriodo(
   periodo: PeriodoAuditoria,
   escolhido: { de: string; ate: string },

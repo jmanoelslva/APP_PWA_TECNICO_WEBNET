@@ -1,8 +1,7 @@
-import { useEffect, useState, type CSSProperties, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { LuCable, LuScanQrCode, LuWifi } from 'react-icons/lu'
 import { buscarCpe, buscarOnu, type CpeDto, type OnuDto } from '../../api/client'
 import LeitorCodigoBarras from '../../components/LeitorCodigoBarras'
-import { CORES } from '../../utils/cores'
 
 type ResultadoCombo = { tipo: 'serial'; item: OnuDto } | { tipo: 'usuario'; item: CpeDto }
 
@@ -23,14 +22,7 @@ function detalheConexao(cpe: CpeDto): string {
     .join(' · ')
 }
 
-/**
- * Combobox único — busca por serial (/fiber_ctl/onu/list no formato
- * "wizard", que filtra por prefixo) e por usuário PPPoE (/cpe/busca, que
- * suporta ILIKE parcial) em paralelo, e mistura os dois num só dropdown —
- * o técnico não precisa saber de antemão se tem o serial ou o usuário em
- * mãos. Também lê o serial pela câmera (código de barras/QR da etiqueta,
- * ver LeitorCodigoBarras.tsx).
- */
+/** Busca por serial (prefixo) e por PPPoE (trecho) em paralelo, num só combobox. Lê o serial pela câmera. */
 export default function BuscaOnu({
   onEscolher,
 }: {
@@ -72,11 +64,8 @@ export default function BuscaOnu({
     }
   }, [busca])
 
-  // Selecionar um item de serial já é a própria ONU; um item de usuário
-  // busca a ONU pelo usuário exato dele.
   function selecionar(resultado: ResultadoCombo) {
-    // Tira o foco do campo: o toque no item não o tira (onMouseDown com
-    // preventDefault) e o teclado continuaria aberto.
+    // Fecha o teclado ao escolher.
     ;(document.activeElement as HTMLElement | null)?.blur()
     setListaAberta(false)
     setBusca('')
@@ -123,7 +112,6 @@ export default function BuscaOnu({
           <button
             type="button"
             className="botao botao-secundario botao-quadrado"
-            style={{ '--botao-cor': CORES.onu } as CSSProperties}
             onClick={() => setLendoCodigo(true)}
             aria-label="Ler código de barras ou QR pela câmera"
             title="Ler código de barras ou QR pela câmera"

@@ -1,10 +1,6 @@
 import type { NivelSinal } from '../../utils/formatacao'
 
-/**
- * Faixa de sinal óptico (dBm) da OLT — mesma origem/critério de
- * nivelSinalOnu (utils/formatacao.ts), mas com cortes diferentes (não é
- * a mesma faixa da ONU, ver comentário lá).
- */
+/** Faixa da OLT (cortes diferentes da ONU). */
 export function nivelSinalOlt(rx: number | undefined): NivelSinal {
   if (rx == null) return 'desconhecida'
   if (rx >= -25) return 'boa'
@@ -12,9 +8,7 @@ export function nivelSinalOlt(rx: number | undefined): NivelSinal {
   return 'critica'
 }
 
-// onu_info_timer — contador em ms desde a última coleta feita pelo
-// Controllr; zera só quando alguém clica em "Atualizar agora" (ver
-// CONTROLLR_API_NOTES.md).
+// ms desde a última coleta; zera em "Atualizar agora".
 export function formatarTempoDesdeColeta(ms: number | undefined): string | null {
   if (ms == null) return null
   const segundosTotais = Math.floor(ms / 1000)
@@ -27,10 +21,7 @@ export function formatarTempoDesdeColeta(ms: number | undefined): string | null 
   return `há ${horas}h${minutosRestantes > 0 ? ` ${minutosRestantes}min` : ''}`
 }
 
-// onu_last_down_time vem como "yyyy-mm-dd hh:mm:ss UTC-3" (hora local do
-// servidor) — reformatado para dd/mm/yyyy hh:mm:ss sem conversão de fuso
-// (o técnico está no mesmo fuso do servidor). Se o formato não bater com o
-// esperado, exibe o valor cru em vez de esconder o dado.
+// "yyyy-mm-dd hh:mm:ss UTC-3" → dd/mm/yyyy hh:mm:ss, sem converter fuso; formato inesperado sai cru.
 export function formatarUltimaQueda(valor: string | undefined): string | null {
   if (!valor) return null
   const match = valor.match(/^(\d{4})-(\d{2})-(\d{2}) (\d{2}:\d{2}:\d{2})/)

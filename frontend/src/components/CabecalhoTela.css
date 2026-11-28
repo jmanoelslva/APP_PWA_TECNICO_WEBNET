@@ -1,5 +1,3 @@
-/* Faixa compacta: ícone + título numa linha baixa, para sobrar mais tela
-   para o conteúdo. */
 .cabecalho-tela {
   display: flex;
   align-items: center;

@@ -1,11 +1,6 @@
 import { dataParaFormatoServidor } from './formatacao'
 
-/**
- * Presets de período para o histórico de conexão (Conexao.tsx). Cálculo
- * de datas replica o do próprio painel Controllr (ver
- * CONTROLLR_API_NOTES.md, seção 7.5): semana vai de domingo a sábado;
- * mês/ano seguem o calendário normal.
- */
+/** Presets do histórico de conexão, como o painel: semana de domingo a sábado. */
 export type PeriodoPreset =
   | 'hoje'
   | 'ontem'
@@ -61,13 +56,7 @@ export interface Periodo {
   fim: string
 }
 
-/**
- * Resolve um preset para { inicio, fim } no formato do servidor.
- * `null` para "desde_o_inicio" e "personalizado" — o primeiro não usa
- * faixa de data nenhuma (mesmo comportamento do painel Controllr:
- * session_date_close IS NOT NULL, sem limite), o segundo é resolvido à
- * parte com as datas escolhidas pelo técnico.
- */
+/** null para "desde_o_inicio" (sem faixa) e "personalizado" (datas à parte). */
 export function calcularPeriodo(preset: PeriodoPreset, referencia: Date = new Date()): Periodo | null {
   switch (preset) {
     case 'hoje':

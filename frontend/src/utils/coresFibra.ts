@@ -1,6 +1,4 @@
-// As 12 cores de fibra do código ABNT (12 fibras por tubo), na ordem da
-// norma, com o hex que a paleta do painel do Controllr já usa. O servidor
-// (routers/dp.py, CORES_ABNT) só aceita estes valores.
+// 12 cores ABNT, na ordem da norma; o servidor só aceita estas.
 
 export interface CorFibra {
   numero: number
@@ -30,13 +28,7 @@ function rgb(hex: string): [number, number, number] | null {
   return [(n >> 16) & 255, (n >> 8) & 255, n & 255]
 }
 
-/**
- * Cor ABNT mais próxima de um hex qualquer. As CTOs antigas tiveram a cor
- * escolhida à mão no painel, com o tom um pouco diferente (ex.: #55FF00 é
- * o verde, #0055FF o azul). Compara pelo matiz, como o olho separa as cores
- * das fibras: sem cor (cinza) decide pelo brilho; laranja e marrom têm o
- * mesmo matiz e se separam pelo brilho.
- */
+/** Cor ABNT mais próxima pelo matiz; cinza pelo brilho; laranja e marrom pelo brilho. */
 export function corMaisProxima(hex: string | null | undefined): CorFibra | null {
   const alvo = hex ? rgb(hex) : null
   if (!alvo) return null
@@ -65,21 +57,4 @@ export function corMaisProxima(hex: string | null | undefined): CorFibra | null 
   }
   if (nome === 'Laranja' && v < 0.75) nome = 'Marrom'
   return pelaCor(nome)
-}
-
-/** Ocupação da CTO para a cor do ponto no mapa e da lista. */
-export type Ocupacao = 'livre' | 'pouca' | 'lotada' | 'desconhecida'
-
-export function ocupacaoDaCto(dp: { limite: number | null; ativos: number | null }): Ocupacao {
-  if (!dp.limite || dp.ativos == null) return 'desconhecida'
-  const livres = dp.limite - dp.ativos
-  if (livres <= 0) return 'lotada'
-  return livres <= 2 ? 'pouca' : 'livre'
-}
-
-export const COR_OCUPACAO: Record<Ocupacao, string> = {
-  livre: '#2fb344',
-  pouca: '#f5b800',
-  lotada: '#d93025',
-  desconhecida: '#8a939e',
 }

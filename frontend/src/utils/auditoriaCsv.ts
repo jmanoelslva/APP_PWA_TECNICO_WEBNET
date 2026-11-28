@@ -1,8 +1,7 @@
 import type { EventoAuditoria } from '../api/client'
 import { detalhes, mudancas } from './auditoria'
 
-// CSV da Auditoria (o que está carregado na tela, com os filtros aplicados).
-// Separador ";" e BOM: o Excel em português abre direto, com acentos.
+// CSV com ";" e BOM, para o Excel em português.
 
 function celula(valor: string): string {
   return /[";\n\r]/.test(valor) ? `"${valor.replace(/"/g, '""')}"` : valor

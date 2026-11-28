@@ -6,12 +6,7 @@ import 'leaflet/dist/leaflet.css'
 const URL_SATELITE = 'https://{s}.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}'
 const COR_PONTO = '#236085'
 
-/**
- * Miniatura do ponto do endereço na edição de endereço: o técnico confere
- * no satélite se a coordenada caiu na casa certa antes de salvar. O
- * círculo mostra a precisão da captura feita agora (sem círculo quando a
- * coordenada veio do cadastro).
- */
+/** Miniatura do endereço no satélite; círculo = precisão da captura feita agora. */
 export default function MapaEndereco({ lat, lng, precisaoM }: { lat: number; lng: number; precisaoM: number | null }) {
   const divRef = useRef<HTMLDivElement>(null)
   const mapaRef = useRef<L.Map | null>(null)
@@ -74,7 +69,5 @@ export default function MapaEndereco({ lat, lng, precisaoM }: { lat: number; lng
     mapa.setView(posicao, 19)
   }, [lat, lng, precisaoM])
 
-  // data-sem-arrastar: arrastar ou fazer pinça no mapa move o mapa, não a
-  // janela (ver utils/arrastarFolhas.ts).
   return <div ref={divRef} className="mapa-endereco" role="img" aria-label="Posição do endereço no mapa" data-sem-arrastar />
 }

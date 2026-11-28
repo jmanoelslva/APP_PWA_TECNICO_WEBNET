@@ -10,12 +10,7 @@ export interface OpcaoSegmentada<T extends string> {
   alerta?: boolean
 }
 
-/**
- * Filtro de uma escolha só em faixa de blocos iguais (controle segmentado):
- * número em destaque e nome embaixo, ou só o nome. Nunca corta nem quebra
- * linha — padrão de filtro de período/situação do app (Offline, OS,
- * Auditoria).
- */
+/** Filtro segmentado de uma escolha (Offline, OS, Auditoria). */
 export default function FiltroSegmentado<T extends string>({
   opcoes,
   ativa,

@@ -26,14 +26,8 @@ interface Resultados {
 
 const VAZIO: Resultados = { clientes: [], onus: [], conexoes: [] }
 
-/**
- * Busca única (item "Buscar" da barra de navegação). Ao vivo, como a da
- * Home e as de Conexão/ONU: digitou 2 letras, espera 350 ms parado e
- * consulta. Em paralelo: cliente (nome/contrato/CPF), ONU pelo serial
- * (prefixo, mesma consulta da tela ONU) e conexão pelo usuário PPPoE
- * (parcial). Texto com espaço é nome — aí só busca cliente. O termo fica
- * na URL (?busca=) para voltar de um resultado e achar a mesma lista.
- */
+/** Busca completa (Enter no Início): cliente, ONU pelo serial e conexão pelo PPPoE, em paralelo. Texto com espaço =
+   nome. Termo em ?busca=. */
 export default function BuscaCliente() {
   const [params, setParams] = useSearchParams()
   const [busca, setBusca] = useState(params.get('busca') ?? '')
@@ -70,8 +64,7 @@ export default function BuscaCliente() {
             onus: onus.status === 'fulfilled' ? onus.value.results : [],
             conexoes: conexoes.status === 'fulfilled' ? conexoes.value.results : [],
           })
-          // Erro só quando as três falharam — uma falha sozinha só deixa
-          // aquele grupo vazio.
+          // Erro só se as três falharem.
           if (clientes.status === 'rejected' && onus.status === 'rejected' && conexoes.status === 'rejected') {
             const motivo = clientes.reason
             setErro(motivo instanceof ApiError ? motivo.message : 'Não foi possível buscar agora.')

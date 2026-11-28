@@ -1,8 +1,6 @@
-import type { CSSProperties } from 'react'
 import { LuRefreshCw } from 'react-icons/lu'
 import Skeleton from '../../components/Skeleton'
 import LidoHa from '../../components/LidoHa'
-import { CORES } from '../../utils/cores'
 import IpComAcesso from '../../components/IpComAcesso'
 import { ROTULOS_CODIGO, camposSessao } from './sessao'
 
@@ -28,7 +26,6 @@ export default function CardSessaoOnline({
         <h2>Sessão online</h2>
         <button
           className="botao botao-secundario botao-pequeno"
-          style={{ '--botao-cor': CORES.conexao } as CSSProperties}
           onClick={onAtualizar}
           disabled={carregando}
         >

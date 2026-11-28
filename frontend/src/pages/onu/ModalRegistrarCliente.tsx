@@ -1,4 +1,4 @@
-import { useEffect, useState, type CSSProperties } from 'react'
+import { useEffect, useState } from 'react'
 import { LuCable, LuUser, LuWifi } from 'react-icons/lu'
 import {
   ApiError,
@@ -11,7 +11,6 @@ import {
   type OnuDto,
 } from '../../api/client'
 import { useToast } from '../../components/Toast/useToast'
-import { CORES } from '../../utils/cores'
 import { detectarTipoBusca, formatarDocumento } from '../../utils/formatacao'
 import { useFecharComVoltar } from '../../hooks/useFecharComVoltar'
 
@@ -29,12 +28,7 @@ function conexaoParaCombo(cpe: CpeDto): CpeComboDto {
   }
 }
 
-/**
- * Associa uma ONU sem cliente a um cliente: busca por nome, CPF/CNPJ,
- * contrato ou login PPPoE, escolhe qual conexão (PPPoE) dele vincular e
- * confirma. Achado pelo PPPoE, ou cliente com uma só conexão, vai direto
- * para a confirmação.
- */
+/** Associa ONU a cliente: busca, escolha da conexão e confirmação. Uma conexão só vai direto. */
 export default function ModalRegistrarCliente({
   onu,
   onFechar,
@@ -52,12 +46,8 @@ export default function ModalRegistrarCliente({
   const [buscando, setBuscando] = useState(false)
   const [jaBuscou, setJaBuscou] = useState(false)
   const [selecionado, setSelecionado] = useState<BuscaClienteResultado | null>(null)
-  // Depois de escolher o cliente, o técnico ainda escolhe qual PPPoE
-  // vincular — o cliente pode ter mais de uma conexão cadastrada, e não
-  // deve ser presumido qual delas. Só com uma conexão a escolha é óbvia.
   const [cpeEscolhida, setCpeEscolhida] = useState<CpeComboDto | null>(null)
-  // Chegou à confirmação sem passar pela lista de conexões: "Voltar" volta
-  // para a busca.
+  // Direto na confirmação: Voltar volta à busca.
   const [direto, setDireto] = useState(false)
   const [associando, setAssociando] = useState(false)
   const { toast } = useToast()
@@ -128,10 +118,7 @@ export default function ModalRegistrarCliente({
   }
 
   async function confirmar() {
-    // onu.pk (onu_pk) vem 0 para ONU sem cliente vinculado — o caso mais
-    // comum de usar este modal — válido aqui, não "faltando": uma ONU
-    // recém-instalada tem pk=0 até ser associada a um cliente pela
-    // primeira vez.
+    // onu.pk 0 é válido (ONU sem cliente).
     if (
       !selecionado ||
       !cpeEscolhida?.cpe_pk ||
@@ -349,7 +336,6 @@ export default function ModalRegistrarCliente({
               <button
                 aria-busy={associando}
                 className="botao botao-primario"
-                style={{ '--botao-cor': CORES.onu } as CSSProperties}
                 disabled={associando}
                 onClick={confirmar}
               >

@@ -7,6 +7,25 @@ e este projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR
 
 ## [Não lançado]
 
+### Adicionado
+
+- Mapa de CTOs: campo Descrição no cadastro e na edição da CTO (gravado na descrição do Controllr; vazio fica como antes).
+
+### Alterado
+
+- Cadastro de CTO: o nome montado e o aviso "Escolha o setor e informe o hub e o número." usam a mesma fonte do restante da janela; botão do mapa agora diz "Cadastrar CTO".
+- Mapa de CTOs: retirado o filtro "Só com porta livre" (a lista das mais próximas já mostra as portas livres de cada CTO).
+- Títulos padronizados com o menu: "OS" (antes "OS / Suporte") e "Clientes offline".
+- Código revisado: comentários reduzidos a notas curtas, sem código morto nem estilos sem uso.
+
+### Corrigido
+
+- Janelas da OS (escolha de OS), do chamado, do QR do Wi-Fi e da CTO agora travam a rolagem da tela de trás, como as demais.
+
+### Removido
+
+- Rotas do servidor sem uso no app: criar e excluir endereço, localização do equipamento, cancelar e reabrir OS e lista de chamados.
+
 ## [1.33.0] - 2026-11-28
 
 ### Adicionado

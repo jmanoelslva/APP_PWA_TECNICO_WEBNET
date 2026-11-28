@@ -27,9 +27,7 @@ from .routers import (
 
 logger = logging.getLogger(__name__)
 
-# O uvicorn só configura os próprios logs: sem isto, as mensagens INFO deste
-# app (ex.: "Vigia de OS ligado", "N aviso(s) enviado(s)") não chegavam ao
-# journal — só alertas e erros. Mesmo formato do uvicorn ("INFO:     ...").
+# Logs INFO do app no journal, no formato do uvicorn.
 _log_app = logging.getLogger("app")
 if not _log_app.handlers:
     _saida = logging.StreamHandler()
@@ -43,8 +41,6 @@ if not _log_app.handlers:
 async def ciclo_de_vida(_app: FastAPI) -> AsyncIterator[None]:
     # Sessões gravadas antes do reinício: atualizar o app não derruba ninguém.
     sessions.carregar()
-    # Vigia de OS nova (avisos no celular): só com usuário de consulta e
-    # chaves configurados no backend.env.
     tarefa = asyncio.create_task(vigia_os.rodar()) if vigia_os.configurado() else None
     if tarefa is None:
         logger.info("Avisos de OS desligados (sem CONTROLLR_CONSULTA_* ou VAPID_* no backend.env)")
@@ -85,11 +81,7 @@ app.include_router(telefones.router)
 
 @app.get("/health")
 async def health(request: Request) -> dict[str, bool | str]:
-    """
-    Vivo ou não. A versão só vai para quem chama de dentro do servidor
-    (curl 127.0.0.1, conferência de deploy); pelo proxy público, que sempre
-    manda X-Real-IP/X-Forwarded-For, sai só {"ok": true}.
-    """
+    """Versão só para chamadas locais (sem X-Real-IP/X-Forwarded-For)."""
     resposta: dict[str, bool | str] = {"ok": True}
     de_dentro = request.client is not None and request.client.host in ("127.0.0.1", "::1")
     if de_dentro and not (request.headers.get("x-real-ip") or request.headers.get("x-forwarded-for")):

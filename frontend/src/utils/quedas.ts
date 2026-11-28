@@ -23,11 +23,7 @@ export function periodoQuedas(agora: Date = new Date()): { dataInicio: string; d
   return { dataInicio: dataControllr(inicio), dataFim: dataControllr(agora) }
 }
 
-/**
- * Sessões encerradas no período = quedas. A partir de 3 em 7 dias pede
- * atenção; a partir de 10, crítico. `total` vem do servidor (período
- * inteiro); a lista pode ser só a primeira página.
- */
+/** Quedas = sessões encerradas. ≥3 em 7 dias: atenção; ≥10: crítico. total vem do servidor. */
 export function resumirQuedas(sessoes: SessaoHistoricoDto[], total?: number): ResumoQuedas {
   const quantidade = total ?? sessoes.length
   const perdaDeLink = sessoes.filter((s) => s.session_terminate_cause === PERDA_DE_LINK).length

@@ -1,10 +1,4 @@
-"""
-Ticket / Suporte Técnico — o CASO/chamado aberto pelo cliente (título,
-descrição, categoria, chat). Diferente de Ordem de Serviço (ver
-ordens_servico.py): um ticket pode ter uma ou mais OS vinculadas
-(trabalho de campo agendado), mas o ticket em si nunca é "fechado" pelo
-técnico neste app — quem se fecha é a OS (support_ctl/os/close).
-"""
+"""Ticket (chamado do cliente) e seu chat. O técnico não fecha ticket; fecha a OS."""
 
 import asyncio
 import logging
@@ -13,7 +7,7 @@ from urllib.parse import quote, urlencode
 
 import aiohttp
 from aiohttp import FormData
-from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile
+from fastapi import APIRouter, Depends, HTTPException, UploadFile
 from fastapi.responses import Response as FastAPIResponse
 from pydantic import BaseModel
 
@@ -25,34 +19,6 @@ from ..where import where_eq
 
 router = APIRouter(prefix="/suporte", tags=["suporte"])
 logger = logging.getLogger(__name__)
-
-
-@router.get("/tickets")
-async def listar_tickets(
-    minhas: bool = Query(default=True),
-    client_pk: int | None = Query(default=None, description="Filtra pelos chamados de um cliente específico"),
-    start: int = Query(default=0, ge=0),
-    limit: int = Query(default=20, ge=1, le=100),
-    ctx: AuthContext = Depends(get_auth_context),
-) -> dict[str, Any]:
-    where = None
-    if client_pk is not None:
-        # Usado pela tela de detalhe do cliente, para mostrar o histórico
-        # de chamados junto com cadastro/contratos/endereços. "ticket.
-        # client_pk" (com prefixo) — ticket_list traz campos via join
-        # (client_complete_name, category_name etc.), o que torna
-        # "client_pk" sozinho ambíguo.
-        where = where_eq("ticket.client_pk", client_pk)
-    # "minhas" filtrava por ctx.session.user_pk, campo que a sessão não tem
-    # mais (só username + cookie do Controllr): dava erro 500. Sem client_pk,
-    # lista os chamados que o próprio Controllr deixa o técnico ver (ACL) —
-    # mesmo resultado que o código antigo tinha quando o user_pk faltava.
-    # O parâmetro "minhas" fica aceito para não quebrar quem já o envia.
-
-    resposta = await ctx.controllr.ticket_list(montar_corpo(where, action="list", start=start, limit=limit))
-    if not resposta.success:
-        raise HTTPException(status_code=400, detail=detalhe_erro("Não foi possível listar os chamados.", resposta))
-    return {"success": True, "results": resposta.results, "total": resposta.total}
 
 
 @router.get("/tickets/{ticket_pk}")
@@ -90,9 +56,7 @@ async def criar_mensagem_ticket(
     return {"success": True, "results": resposta.results}
 
 
-# No máximo 3 anexos sendo lidos/enviados ao mesmo tempo: cada um fica
-# inteiro na memória (até ANEXO_MAX_MB) até seguir para o Controllr. Os
-# demais esperam a vez em vez de somar memória.
+# Até 3 anexos em memória ao mesmo tempo.
 _ENVIOS_ANEXO = asyncio.Semaphore(3)
 
 
@@ -125,10 +89,7 @@ async def enviar_anexo_ticket(
     return {"success": True, "results": resposta.results}
 
 
-# Anexo é arquivo enviado por qualquer um (técnico, escritório, cliente) e é
-# servido no MESMO domínio do app: um .html ou .svg aberto aqui rodaria
-# script com a sessão de quem clicou. Só abre na tela o que não executa nada
-# (imagem que não seja SVG, vídeo, áudio, PDF); o resto vai como download.
+# Mesmo domínio do app: só abre na tela o que não executa script; o resto vai como download.
 def _abre_na_tela(tipo: str) -> bool:
     if tipo.startswith("image/"):
         return not tipo.startswith("image/svg")
@@ -136,10 +97,7 @@ def _abre_na_tela(tipo: str) -> bool:
 
 
 def _tipo_pela_assinatura(inicio: bytes) -> str | None:
-    """
-    O Controllr às vezes manda a foto sem o tipo certo (octet-stream): confere
-    pelos primeiros bytes se é mesmo imagem/vídeo/PDF. HTML, SVG e HEIC não.
-    """
+    """Confere o tipo pelos primeiros bytes. HTML, SVG e HEIC não."""
     if inicio.startswith(b"\xff\xd8\xff"):
         return "image/jpeg"
     if inicio.startswith(b"\x89PNG"):
@@ -169,13 +127,9 @@ async def visualizar_anexo_ticket(
 ) -> FastAPIResponse:
     if arquivo in (".", "..") or "\\" in arquivo:
         raise HTTPException(status_code=400, detail="Nome de anexo inválido.")
-    # support_ctl/annex/view não tem wrapper no brbyteapi — proxy simples
-    # com o cookie de sessão do técnico, o mesmo usado em toda chamada
-    # deste backend ao Controllr (ver deps.py::get_auth_context).
+    # annex/view sem wrapper: proxy com o cookie do técnico.
     url = f"{CONTROLLR_URL}/support_ctl/annex/view/{ticket_pk}/{quote(arquivo, safe='')}"
-    # Com sinal ruim ou Controllr lento a tela não pode ficar presa: 60 s no
-    # total e no máximo ANEXO_VER_MAX_BYTES (anexo do painel pode ser maior
-    # que o limite de envio do app).
+    # Teto de 60 s e ANEXO_VER_MAX_BYTES.
     try:
         async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=60)) as session:
             async with session.get(url, headers={"Cookie": ctx.session.controllr_cookie}) as resposta:
@@ -195,8 +149,7 @@ async def visualizar_anexo_ticket(
     if len(conteudo) > ANEXO_VER_MAX_BYTES:
         raise HTTPException(status_code=413, detail="Anexo grande demais para abrir no app.")
     if status >= 400:
-        # Não repassa o código do Controllr: um 401 dele aqui faria o
-        # app achar que a sessão do técnico caiu e mandar para o login.
+        # Não repassa o código: um 401 dele deslogaria o técnico.
         logger.warning("Anexo %s/%s: Controllr respondeu HTTP %s", ticket_pk, arquivo, status)
         raise HTTPException(
             status_code=404 if status == 404 else 502,

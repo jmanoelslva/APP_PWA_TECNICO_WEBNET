@@ -22,12 +22,10 @@ import { nomeLembrado } from '../utils/nomeTecnico'
 import './Login.css'
 
 type Campo = 'usuario' | 'senha'
-// Login em duas etapas: o usuário (só quando o aparelho não lembra nenhum)
-// e a senha ("Olá, fulano" + senha).
+// Duas etapas: usuário (se o aparelho não lembra) e senha.
 type Etapa = 'usuario' | 'senha'
 
-// Mensagem do backend quando o limite de tentativas bloqueou o login
-// (backend/app/routers/auth.py): mostrada como aviso de espera, não como erro.
+// Bloqueio por tentativas aparece como aviso, não erro.
 function ehBloqueio(mensagem: string): boolean {
   return mensagem.startsWith('Muitas tentativas')
 }
@@ -64,11 +62,7 @@ function salvarUsuarioLembrado(usuario: string | null) {
   }
 }
 
-/**
- * Área visível acima do teclado. No Android (Chrome) e no iPhone o teclado
- * cobre a página sem encolhê-la; a tela de login segue o visualViewport
- * para tudo caber no que sobra e o Entrar poder ficar à vista.
- */
+/** Área acima do teclado (o teclado cobre a página sem encolhê-la). */
 function useAreaVisivel(): { estilo: CSSProperties | undefined; altura: number | null } {
   const [area, setArea] = useState<{ altura: number; topo: number } | null>(null)
   useEffect(() => {
@@ -97,8 +91,6 @@ export default function Login() {
   const [senha, setSenha] = useState('')
   const [mostrarSenha, setMostrarSenha] = useState(false)
   const [capsLock, setCapsLock] = useState(false)
-  // Campos deixados em branco ao tentar seguir (aviso no próprio campo, no
-  // lugar do balão do navegador).
   const [vazios, setVazios] = useState<Set<Campo>>(new Set())
   // O erro do login some quando o técnico começa a corrigir.
   const [editouDepoisDoErro, setEditouDepoisDoErro] = useState(false)
@@ -111,13 +103,7 @@ export default function Login() {
   const { podeInstalar, podeInstalarIos, aoClicarInstalar, modalIosAberto, fecharModalIos } = usePwaInstall()
   const { estilo: estiloArea, altura: alturaVisivel } = useAreaVisivel()
 
-  // Ao sair (ou com a sessão encerrada), as telas visitadas continuam no
-  // histórico atrás do login: o "voltar" do Android passava por elas (cada
-  // uma redireciona de novo para cá) em vez de fechar o app. Volta para a
-  // primeira entrada do app nesta aba — o React Router guarda a posição em
-  // history.state.idx — e ela redireciona para o login com replace; aí o
-  // "voltar" fecha o app. Com ?voltar= (veio do Coletor de OLTs) não mexe,
-  // para não perder o destino.
+  // Ao sair, volta à primeira entrada do histórico para o Voltar fechar o app. Com ?voltar= não mexe.
   const voltouAoInicio = useRef(false)
   useEffect(() => {
     if (voltouAoInicio.current) return
@@ -134,8 +120,7 @@ export default function Login() {
     ;(etapa === 'senha' ? senhaRef : usuarioRef).current?.focus()
   }, [etapa])
 
-  // Teclado abriu (área visível mudou) com um campo em foco: rola até o
-  // botão Entrar ficar à vista, logo acima do teclado.
+  // Teclado aberto: rola até o Entrar.
   useEffect(() => {
     const foco = document.activeElement
     if (!foco || (foco !== senhaRef.current && foco !== usuarioRef.current)) return
@@ -143,8 +128,7 @@ export default function Login() {
     return () => cancelAnimationFrame(quadro)
   }, [alturaVisivel])
 
-  // Em iOS não existe prompt automático do navegador (ver usePwaInstall.ts)
-  // — esse é o jeito de aparecer "sozinho" logo na tela de login.
+  // iOS não tem prompt de instalação: oferece aqui.
   useEffect(() => {
     if (!podeInstalarIos) return
     aoClicarInstalar()
@@ -179,16 +163,13 @@ export default function Login() {
     const sucesso = await entrar(login, senhaLogin)
     if (!sucesso) return
     salvarUsuarioLembrado(lembrar ? login : null)
-    // Veio do Coletor de OLTs (/olt/) sem sessão: volta para onde estava.
-    // Só aceita caminhos do coletor, para o parâmetro não virar um
-    // redirecionamento para qualquer lugar.
+    // Retorno ao Coletor de OLTs, só para caminhos /olt/.
     const voltar = new URLSearchParams(window.location.search).get('voltar')
     if (voltar && /^\/olt(\/|$)/.test(voltar) && !voltar.startsWith('//')) {
       window.location.assign(voltar)
       return
     }
-    // replace: o login sai do histórico — "voltar" na tela inicial fecha o
-    // app em vez de mostrar o login de novo com a sessão aberta.
+    // replace: o login sai do histórico.
     navigate('/', { replace: true, viewTransition: true })
   }
 

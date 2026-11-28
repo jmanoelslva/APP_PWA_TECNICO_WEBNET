@@ -1,15 +1,4 @@
-"""
-Projeto da rede (KMZ/KML do Google Earth) para o mapa do bloco CTO.
-
-O arquivo fica no servidor (MAPA_PROJETO_PATH em config.py), trocado à mão
-quando o projeto muda. É lido uma vez e guardado em memória até a data de
-modificação mudar. O app só pede o pedaço em volta da CTO (lat/lng/raio),
-para não mandar o projeto inteiro ao celular a cada consulta.
-
-Só o necessário para desenhar: pontos, linhas e polígonos (borda externa),
-com nome, pasta e cor. Ícones, descrições HTML, NetworkLink e GroundOverlay
-são ignorados.
-"""
+"""Projeto da rede (KMZ/KML) para o mapa da CTO. Lido uma vez por versão do arquivo; o app pede só o entorno."""
 
 import io
 import math
@@ -166,11 +155,7 @@ def coordenadas(texto: str | None) -> list[list[float]]:
 
 
 def filtrar_por_raio(itens: list[dict[str, Any]], lat: float, lng: float, raio_m: int) -> list[dict[str, Any]]:
-    """
-    Itens cujo retângulo envolvente cruza o quadrado de lado 2*raio em volta
-    de lat/lng — pega também o cabo longo que só passa pela área, sem
-    nenhum vértice dentro dela.
-    """
+    """Itens cujo retângulo cruza o quadrado em volta do ponto (inclui cabo que só passa pela área)."""
     dlat = raio_m / 111_320
     dlng = raio_m / (111_320 * max(math.cos(math.radians(lat)), 0.01))
     resultado = []

@@ -1,27 +1,4 @@
-"""
-Financeiro do cliente — faturas (cobranças) e pagamentos em observação.
-
-"Pagamento em observação" é um recurso do Controllr: uma anotação presa
-a uma fatura que suspende as consequências de um atraso (ex: bloqueio
-automático) até uma data ou por um período em dias, enquanto o cliente
-negocia o pagamento (Financeiro > Cobranças > Pagamentos em observação
-no painel).
-
-O acesso é decidido pelo Controllr: cada rota repassa o 403 "Access
-Denied" que a chamada real devolve quando o técnico não tem liberação
-de ACL para o módulo financeiro (mesmo padrão do fechamento de OS).
-
-Nomes de campo não documentados na doc oficial:
-- `/invoice_ctl/invoice/list`: filtro por cliente é `client.client_pk`
-  (com prefixo — mesmo padrão de coluna ambígua de outros endpoints, ver
-  CONTROLLR_API_NOTES.md seção 2). Cada fatura já traz `obs_pk`/
-  `obs_date_end` quando está em observação, sem precisar de outra chamada.
-- `/invoice_ctl/observation/create`: campos do formulário ("Pagamentos
-  em observação" > "Novo") são `client_pk`, `contract_pk`, `invoice_pk`,
-  `obs_release_type` (0 = Data de Validade, usa `obs_date_end`; 1 =
-  Período, usa `obs_period` em dias), `obs_status` (0 = habilitado,
-  qualquer outro valor = desabilitado) e `obs_text` (a observação).
-"""
+"""Faturas e pagamentos em observação. Permissão: ACL do Controllr (403 repassado). Campos em CONTROLLR_API_NOTES.md."""
 
 from typing import Any
 
@@ -63,9 +40,7 @@ class ObservacaoPayload(BaseModel):
     contract_pk: int
     invoice_pk: int
     obs_text: str
-    # Exatamente um dos dois — corresponde ao campo "Liberar Tipo" do
-    # painel (obs_release_date = "Data de Validade", obs_period_dias =
-    # "Período").
+    # Exatamente um dos dois ("Liberar Tipo" do painel).
     obs_release_date: str | None = None
     obs_period_dias: int | None = None
 

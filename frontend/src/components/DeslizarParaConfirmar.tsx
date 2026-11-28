@@ -5,11 +5,7 @@ import './DeslizarParaConfirmar.css'
 // Fração do trilho que o polegar precisa percorrer para valer.
 const LIMIAR = 0.9
 
-/**
- * Confirmação por deslizar — para ação que derruba o cliente (reiniciar,
- * remover ONU). Um toque acidental não dispara; no teclado, Enter na alça
- * confirma (gesto deliberado).
- */
+/** Deslizar para confirmar ação que derruba o cliente. Enter na alça confirma. */
 export default function DeslizarParaConfirmar({
   texto,
   cor,
@@ -67,8 +63,6 @@ export default function DeslizarParaConfirmar({
       ref={trilhoRef}
       className={`deslizar${desabilitado ? ' deslizar-desabilitado' : ''}${arrastando ? ' deslizar-arrastando' : ''}`}
       style={{ '--deslizar-cor': cor, '--deslizar-fracao': fracao } as CSSProperties}
-      // Deslizar com o dedo descendo um pouco não pode arrastar (e fechar)
-      // a janela em volta (utils/arrastarFolhas.ts).
       data-sem-arrastar
     >
       <span className="deslizar-preenchimento" aria-hidden="true" />

@@ -12,24 +12,13 @@ from ..where import corpo, where_eq
 
 router = APIRouter(prefix="/onu", tags=["onu"])
 
-# A OLT precisa desse intervalo para recarregar antes que reler a ONU
-# traga dado novo — reler imediatamente após o reconnect devolveria o
-# valor antigo. Ajustar `deploy/nginx.conf.example`/
-# `apache-vhost.conf.example` (proxy_read_timeout/ProxyTimeout) se esses
-# valores mudarem, senão o reverse proxy corta a requisição antes do
-# backend responder.
+# Espera para a OLT recarregar. Mudou? Ajuste o timeout do proxy em deploy/*.conf.example.
 ESPERA_APOS_RECONECTAR_OLT_S = 15
 ESPERA_APOS_ATUALIZAR_ONU_S = 30
 
 
 def _corpo_busca_wizard(search_term: str, search_value: str, sort: str) -> str:
-    """
-    Formato "wizard" de busca (search_term/search_value), mais confiável
-    que filtrar /fiber_ctl/onu/list por "cpe_pk" no "where": esse campo é
-    ambíguo (o endpoint também traz client_pk/contract_number via join) e
-    o Controllr ignora o filtro quebrado, devolvendo a ONU de qualquer
-    cliente em vez de vazio ou erro.
-    """
+    """Busca "wizard": filtrar onu/list por cpe_pk é ignorado e traz ONU de outro cliente."""
     campos = {
         "olt_pk": 0,
         "dp_pk": -1,
@@ -52,10 +41,7 @@ def _corpo_busca_wizard(search_term: str, search_value: str, sort: str) -> str:
 
 
 def pppoe_igual(onu: Any, username: str) -> bool:
-    """A busca do Controllr por PPPoE é por trecho: "silva@x" também
-    traz "mariasilva@x" (visto ao vivo em 06/11, ONU de outro cliente
-    no "Pronto para fechar"). Só vale o PPPoE exato, sem diferenciar
-    maiúsculas — da ONU ou, na falta dele, da conexão ligada a ela."""
+    """Busca por PPPoE é por trecho: só vale o PPPoE exato (da ONU ou da conexão)."""
     alvo = username.strip().lower()
     for campo in ("wancfg_pppoe_username", "cpe_username"):
         valor = getattr(onu, campo, None)
@@ -80,10 +66,7 @@ async def buscar_onu(
     elif username:
         corpo_requisicao = _corpo_busca_wizard("onu_wancfg_pppoe_username", username.strip(), sort="onu_pk")
     else:
-        # "cpe_pk" puro é ambíguo aqui (ver docstring acima) — opção de
-        # baixo nível; "username" é o filtro preferido para achar a ONU de
-        # um cliente específico. O filtro abaixo garante não devolver a
-        # ONU de outro cpe_pk mesmo que o "where" seja ignorado.
+        # cpe_pk no where é ignorado: o filtro abaixo garante a ONU certa.
         campo, valor = ("olt_pk", olt_pk) if not cpe_pk else ("cpe_pk", cpe_pk)
         corpo_requisicao = corpo(where_eq(campo, valor), limit=20)
 
@@ -112,11 +95,7 @@ async def atualizar_info_onu(
     frame_id: int = Query(default=1),
     ctx: AuthContext = Depends(get_auth_context),
 ) -> dict[str, Any]:
-    # Reconecta a OLT antes de atualizar: força o sistema a reler a OLT
-    # (não derruba as ONUs conectadas) e garante que a atualização abaixo
-    # traga o dado mais recente, não um valor em cache. Fluxo: reconectar
-    # → aguardar a OLT recarregar → atualizar a ONU → aguardar refletir →
-    # devolver os dados novos para o chamador reler.
+    # Reconecta a OLT (não derruba ONUs), espera, atualiza a ONU e espera refletir.
     await ctx.controllr.call_api_post("/fiber_ctl/olt/reconnect", urlencode({"olt_pk": olt_pk}))
     await asyncio.sleep(ESPERA_APOS_RECONECTAR_OLT_S)
 
@@ -135,17 +114,13 @@ async def atualizar_info_onu(
 
 def _alvo_onu(onu_pk: int, olt_pk: int, porta: int, onu_id: int, olt_nome: str | None,
               onu_serial: str | None, **extra: Any) -> dict[str, Any]:
-    """O que vai para a auditoria: além dos pks do Controllr, o que a pessoa
-    reconhece na tela — nome da OLT, PON e número da ONU nela, serial (o nome
-    e o serial vêm da tela, como estavam no momento da ação)."""
+    """Alvo da auditoria com o que o técnico reconhece (OLT, PON, número, serial)."""
     alvo = {"onu_pk": onu_pk, "olt_pk": olt_pk, "olt_nome": olt_nome, "porta": porta, "onu_id": onu_id,
             "serial": onu_serial, **extra}
     return {k: v for k, v in alvo.items() if v not in (None, "")}
 
 
-# Endpoints não documentados na doc oficial. Corpo dos dois:
-# olt_pk/frame_id/slot_id/port_id/onu_id — mesmos identificadores OSPO já
-# usados por onu_update_info acima, sem o serial.
+# Sem doc. Corpo: olt_pk/frame_id/slot_id/port_id/onu_id.
 @router.post("/{onu_pk}/reiniciar")
 async def reiniciar_onu(
     onu_pk: int,
@@ -209,9 +184,7 @@ async def renomear_onu(
     nome_anterior: str | None = Query(default=None, max_length=64),
     ctx: AuthContext = Depends(get_auth_context),
 ) -> dict[str, Any]:
-    # Mesmos identificadores OSPO dos dois endpoints acima + "onu_name"
-    # (rótulo do campo no painel é "Descrição", mas o form submete
-    # "onu_name" — não é o mesmo campo de "onu_desc" do modelo).
+    # Mesmos identificadores + onu_name ("Descrição" no painel).
     resposta = await ctx.controllr.call_api_post(
         "/fiber_ctl/onu/apply_rename",
         urlencode({"olt_pk": olt_pk, "frame_id": frame_id, "slot_id": slot_id, "port_id": port_id, "onu_id": onu_id, "onu_name": onu_name}),
@@ -241,9 +214,7 @@ class ContextoAuditoriaAssociacao(BaseModel):
 
 class AssociarClientePayload(BaseModel):
     client_pk: int
-    # O cliente pode ter mais de uma conexão (CPE) cadastrada — o técnico
-    # escolhe explicitamente qual usuário PPPoE vincular a esta ONU, em
-    # vez de presumir a primeira automaticamente.
+    # Conexão escolhida pelo técnico.
     cpe_pk: int
     olt_pk: int
     slot_id: int
@@ -251,11 +222,7 @@ class AssociarClientePayload(BaseModel):
     onu_id: int
     onu_serial: str
     frame_id: int = 1
-    # Config de WAN da própria ONU (Vlan, Cos, Template etc.) — o técnico
-    # não edita nada disso aqui, só reenvia o que a tela já tinha carregado
-    # (ver OnuDto em api/client.ts). /fiber_ctl/onu/apply_wan exige o
-    # registro completo (mesmo padrão de phone/update); sem isso, salvar
-    # zeraria a config de rede da própria ONU.
+    # WAN da ONU reenviada como veio: apply_wan exige o registro completo.
     wancfg_conntype: int | None = None
     wan_tpl_pk: int | None = None
     wancfg_vlanid: int | None = None
@@ -276,13 +243,7 @@ class AssociarClientePayload(BaseModel):
 async def associar_cliente_onu(
     onu_pk: int, payload: AssociarClientePayload, request: Request, ctx: AuthContext = Depends(get_auth_context)
 ) -> dict[str, Any]:
-    # Reproduz a tela "Informações" da ONU do painel (sem documentação
-    # oficial): busca as CPEs do cliente via /aaa_ctl/cpe/list_combo e usa
-    # usuário/senha PPPoE da CPE escolhida — não existe cadastro de PPPoE
-    # "solto", é sempre o acesso que já existe no cadastro do cliente.
-    # Confere a linha devolvida: o Controllr ignora filtro que não entende e
-    # devolve qualquer CPE — pegar a primeira às cegas gravaria na ONU o
-    # usuário/senha PPPoE de outra conexão, até de outro cliente.
+    # Usa usuário/senha da CPE escolhida, conferindo o cpe_pk da linha devolvida.
     cpes_resp = await ctx.controllr.cpe_list_combo(corpo(where_eq("aaa_cpe.cpe_pk", payload.cpe_pk), limit=20))
     cpes = cpes_resp.results if cpes_resp.success else []
     cpe = next((c for c in cpes if _mesmo_pk(c.get("cpe_pk"), payload.cpe_pk)), None)
@@ -318,8 +279,6 @@ async def associar_cliente_onu(
     resposta = await ctx.controllr.call_api_post("/fiber_ctl/onu/apply_wan", urlencode(campos))
     if not resposta.success:
         raise HTTPException(status_code=400, detail=detalhe_erro("Não foi possível associar a ONU a este cliente.", resposta))
-    # Cliente e PPPoE novos vêm da conexão já conferida acima (Controllr), o
-    # anterior e o nome da OLT vêm da tela.
     antes = payload.auditoria or ContextoAuditoriaAssociacao()
     registrar_auditoria(request, ctx.session, "onu.associar_cliente",
                         _alvo_onu(onu_pk, payload.olt_pk, payload.port_id, payload.onu_id, antes.olt_nome,

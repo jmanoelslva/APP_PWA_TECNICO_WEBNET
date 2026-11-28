@@ -1,6 +1,4 @@
-// Regras da tela Clientes Offline: quando caiu, em que grupo fica e CTOs
-// com mais de um cliente offline (sinal de problema coletivo: fibra
-// rompida, CTO ou splitter).
+// Clientes Offline: quando caiu, grupo e CTOs com mais de um offline.
 
 import { instanteDoServidor, tempoRelativo } from './formatacao'
 
@@ -20,10 +18,7 @@ const DIA_MS = 24 * 3600_000
 /** Instante de uma data do Controllr (ver instanteDoServidor). */
 export const instanteAutenticacao = instanteDoServidor
 
-/**
- * Hora da queda: o último accounting da sessão (cpe_date_acct). Sem ele,
- * a última autenticação; sem nenhum dos dois, nunca conectou.
- */
+/** Queda = último accounting; senão a última autenticação; sem ambos, nunca conectou. */
 export function instanteDaQueda(cpe: { date_acct?: string; date_auth?: string }): number | null {
   return instanteAutenticacao(cpe.date_acct) ?? instanteAutenticacao(cpe.date_auth)
 }

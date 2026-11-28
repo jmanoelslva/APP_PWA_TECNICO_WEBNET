@@ -4,29 +4,6 @@
   padding: 24px 20px 48px;
 }
 
-.suporte-abas {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 20px;
-}
-
-.suporte-tela .aba-chip {
-  flex: 1;
-  height: 40px;
-  border-radius: 20px;
-  border: 1.5px solid var(--cor-suporte);
-  background: transparent;
-  color: var(--cor-suporte);
-  font-size: 14px;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.suporte-tela .aba-chip.ativa {
-  background: var(--cor-suporte);
-  color: var(--cor-branco-fixo);
-}
-
 .suporte-lista {
   list-style: none;
   margin: 0;
@@ -44,14 +21,6 @@
   cursor: pointer;
 }
 
-
-.ticket-topo {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
-
 .ticket-assunto {
   font-weight: 700;
   color: var(--cor-texto);
@@ -67,11 +36,7 @@
   white-space: nowrap;
 }
 
-/* Etapa da OS em aberto: tons claros com texto da mesma cor, para o
-   vermelho de "Atrasada" continuar sendo o que chama atenção. Seletor duplo:
-   DetalheChamado.css também define .ticket-status-badge (texto branco) e,
-   carregado depois ao abrir um chamado, deixava o texto branco sobre o tom
-   claro (etiqueta apagada). */
+/* Etapa em tom claro; seletor duplo vence o .ticket-status-badge do DetalheChamado.css. */
 .ticket-status-badge.badge-agendada,
 .ticket-status-badge.badge-respondida,
 .ticket-status-badge.badge-iniciada {
@@ -112,67 +77,11 @@
   border-left: 4px solid var(--cor-erro);
 }
 
-.ticket-rodape {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  margin-top: 10px;
-}
-
-.ticket-quando {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--cor-texto);
-}
-
-.ticket-quando-atrasada {
-  color: var(--cor-erro);
-}
-
-.ticket-atrasada {
-  font-size: 11px;
-  font-weight: 800;
-  padding: 2px 8px;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--cor-erro) 14%, transparent);
-}
-
 .ticket-cliente {
   margin: 6px 0 0;
   font-size: 13px;
   font-weight: 600;
   color: var(--cor-texto-secundario);
-}
-
-.ticket-protocolo,
-.ticket-data {
-  margin: 6px 0 0;
-  white-space: nowrap;
-  font-size: 12px;
-  color: var(--cor-texto-terciario);
-}
-
-.ticket-descricao {
-  margin: 10px 0 0;
-  font-size: 13px;
-  color: var(--cor-texto-secundario);
-}
-
-.suporte-carregar-mais {
-  display: block;
-  margin: 20px auto 0;
-  height: 40px;
-  padding: 0 20px;
-  border-radius: 20px;
-  border: 1px solid var(--cor-borda);
-  background: var(--cor-superficie);
-  color: var(--cor-texto);
-  font-weight: 600;
-  cursor: pointer;
 }
 
 /* Filtros da lista de OS (busca, quando, minhas, etapa e serviço). */
@@ -220,13 +129,11 @@
   margin-bottom: 0;
 }
 
-
 .suporte-selects {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 8px;
 }
-
 
 .suporte-resumo {
   display: flex;
@@ -252,8 +159,7 @@
   cursor: pointer;
 }
 
-/* Lista em linha do tempo: grupos por dia, hora numa coluna fixa à
-   esquerda, rota a um toque à direita — cabem mais OS por tela. */
+/* Grupos por dia, hora à esquerda, rota à direita. */
 .suporte-grupo + .suporte-grupo {
   margin-top: 18px;
 }

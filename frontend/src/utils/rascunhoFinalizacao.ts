@@ -1,7 +1,4 @@
-/**
- * Rascunho da descrição de finalização da OS: sobrevive ao app recarregar
- * (versão nova) ou ser fechado pelo sistema. Apagado ao finalizar.
- */
+/** Rascunho da finalização, apagado ao finalizar. */
 const PREFIXO_RASCUNHO = 'webnet-tecnico-rascunho-'
 
 export function lerRascunhoFinalizacao(osPk: number): string {

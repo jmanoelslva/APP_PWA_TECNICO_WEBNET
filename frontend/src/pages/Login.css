@@ -1,9 +1,4 @@
-/* Login: cabeçalho na cor da marca + cartão branco sobreposto (ordem da
-   especificação de 23/11), em duas etapas (usuário → "Olá, fulano" + senha).
-   A tela ocupa só a área visível (--login-altura/--login-topo, do
-   visualViewport em Login.tsx) e rola por dentro: com o teclado aberto, a
-   tela rola até o Entrar ficar logo acima dele. Pensada para o polegar: a
-   cor da marca ocupa a parte de cima e senha, opções e Entrar ficam embaixo. */
+/* Login: faixa da marca + cartão, em duas etapas. Segue o visualViewport para o Entrar ficar acima do teclado. */
 .login-tela {
   position: fixed;
   left: 0;

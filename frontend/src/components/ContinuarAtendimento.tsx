@@ -3,10 +3,7 @@ import { LuArrowRight, LuWrench } from 'react-icons/lu'
 import { NOME_TELA, lerAtendimento } from '../utils/atendimento'
 import { CORES, comAlpha } from '../utils/cores'
 
-/**
- * "Continuar atendimento" no Início: volta direto à última tela do cliente
- * que estava aberto (até 12 h; some ao sair da conta).
- */
+/** Volta à última tela do atendimento (até 12 h). */
 export default function ContinuarAtendimento() {
   const atendimento = lerAtendimento()
   if (!atendimento?.caminho || !atendimento.tela) return null

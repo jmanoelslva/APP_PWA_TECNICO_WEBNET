@@ -1,15 +1,10 @@
-import { useState, type CSSProperties } from 'react'
+import { useState } from 'react'
 import { LuEye, LuEyeOff, LuSave } from 'react-icons/lu'
 import { ApiError, atualizarDetalhesCpe, type CpeDto } from '../../api/client'
 import { useToast } from '../../components/Toast/useToast'
-import { CORES } from '../../utils/cores'
 import CartaoConexao from './CartaoConexao'
 
-/**
- * Credencial diferente do PPPoE — acesso administrativo ao próprio
- * roteador/CPE, não o login de internet do cliente (cpe_access_login/
- * password/port, doc oficial do Controllr). Editável.
- */
+/** Acesso administrativo ao roteador (cpe_access_*), diferente do PPPoE. */
 export default function CardAcessoRoteador({
   cpe,
   onAtualizado,
@@ -21,8 +16,7 @@ export default function CardAcessoRoteador({
   const [acessoLogin, setAcessoLogin] = useState(cpe.access_login ?? '')
   const [acessoSenha, setAcessoSenha] = useState(cpe.access_password ?? '')
   const [acessoPorta, setAcessoPorta] = useState(cpe.access_port != null ? String(cpe.access_port) : '')
-  // Separado do PPPoE — são credenciais diferentes, e um técnico pode
-  // querer conferir uma sem revelar a outra sem querer.
+  // Revelar separado do PPPoE.
   const [mostrarSenha, setMostrarSenha] = useState(false)
   const [salvando, setSalvando] = useState(false)
 
@@ -94,7 +88,6 @@ export default function CardAcessoRoteador({
       </div>
       <button aria-busy={salvando}
         className="botao botao-secundario botao-pequeno botao-largo"
-        style={{ '--botao-cor': CORES.conexao } as CSSProperties}
         onClick={salvar}
         disabled={salvando}
       >

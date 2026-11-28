@@ -6,11 +6,7 @@ import { useCopiar } from '../../hooks/useCopiar'
 import { mensagemWifi } from '../../utils/wifiQr'
 import ModalQrWifi from '../../components/ModalQrWifi'
 
-/**
- * PPPoE e Wi-Fi configurados na própria ONU. A senha PPPoE aparece de
- * propósito: o técnico configura o equipamento com ela. Um só "mostrar
- * senha" para os dois cartões.
- */
+/** PPPoE e Wi-Fi da ONU; um "mostrar senha" para os dois. */
 export default function CardsCredenciais({ onu }: { onu: OnuDto }) {
   const [mostrarSenha, setMostrarSenha] = useState(false)
   const [qrAberto, setQrAberto] = useState(false)

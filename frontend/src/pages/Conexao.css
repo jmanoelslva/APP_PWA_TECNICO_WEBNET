@@ -42,8 +42,7 @@
   text-align: right;
 }
 
-/* Sessão online: uma linha por campo, sem quebra (valor longo, como o
-   IPv6, corta com reticências; o valor inteiro fica no title). */
+/* Uma linha por campo; valor longo com reticências. */
 .conexao-linha-sessao {
   gap: 12px;
 }
@@ -121,8 +120,6 @@
 }
 
 .conexao-historico-titulo {
-  /* Sem border-top de propósito — a linha "Última autenticação" logo
-     acima já termina com um separador. */
   margin: 12px 0 4px;
   font-size: 13px;
   font-weight: 800;
@@ -139,9 +136,6 @@
   min-width: 0;
 }
 
-/* Cada sessão do histórico como um bloco próprio (em vez de linhas soltas
-   dividindo o card inteiro) — mais fácil de separar visualmente uma
-   sessão da outra numa lista que pode ter vários itens. */
 .conexao-historico-item {
   background: var(--cor-fundo);
   border-radius: 12px;
@@ -290,8 +284,6 @@
   position: relative;
 }
 
-/* Fora do mapa (z-index 0 isola os controles do Leaflet), então z-index 1
-   já fica por cima. */
 .mapa-cto-localizar,
 .mapa-cto-controle {
   position: absolute;
@@ -334,8 +326,6 @@
 }
 
 .mapa-cto-legenda {
-  /* Quadro sobre o mapa, canto inferior esquerdo; não alcança o botão de
-     localização (direita) nem a atribuição das imagens. */
   position: absolute;
   left: 8px;
   bottom: 22px;
@@ -434,16 +424,6 @@
   border-color: var(--cor-conexao);
 }
 
-.conexao-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  color: var(--cor-conexao);
-  font-weight: 700;
-  text-decoration: none;
-  text-align: right;
-}
-
 .conexao-selo-status {
   margin-bottom: 8px;
 }
@@ -453,7 +433,6 @@
   font-size: 12px;
   color: var(--cor-texto-secundario);
 }
-
 
 /* Portas da CTO (PortasCto): livres para tocar, ocupadas com o PPPoE. */
 .portas-cto {
@@ -522,8 +501,7 @@
   outline-offset: 2px;
 }
 
-/* Bolinha: situação do contrato do ocupante. Anel claro para aparecer
-   sobre qualquer fundo (cinza, cor da Conexão ou vermelho). */
+/* Situação do contrato do ocupante. */
 .portas-cto-ponto {
   position: absolute;
   top: 4px;
@@ -539,8 +517,7 @@
   background: #22c55e;
 }
 
-/* Mesmas cores do Controllr: cinza desativado, verde ativado, amarelo
-   alertado, laranja pendente, vermelho bloqueado e preto cancelado. */
+/* Cores do Controllr: cinza, verde, amarelo, laranja, vermelho, preto. */
 .portas-cto-ponto.contrato-0 {
   background: #9ca3af;
 }
@@ -685,8 +662,6 @@
   color: var(--cor-texto-secundario);
 }
 
-/* "Por que está sem internet?" (CardDiagnostico): ícone e fundo suave na
-   cor da gravidade (sem faixa na borda), título, próximo passo e atalho. */
 .diagnostico {
   --diagnostico-cor: var(--cor-texto-terciario);
   background: color-mix(in srgb, var(--diagnostico-cor) 7%, var(--cor-superficie));

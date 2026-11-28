@@ -24,8 +24,7 @@ import {
 } from '../utils/offline'
 import './ClientesOffline.css'
 
-// A tela agrupa a lista inteira (tempo offline e CTO), então carrega em
-// páginas grandes: normalmente uma ida só.
+// Páginas grandes: a tela agrupa a lista inteira.
 const TAMANHO_PAGINA = 200
 
 type Periodo = 'todos' | GrupoOffline
@@ -61,8 +60,7 @@ export default function ClientesOffline() {
   const [busca, setBusca] = useState('')
   const [periodo, setPeriodo] = useState<Periodo>('todos')
   const [ctoFiltro, setCtoFiltro] = useState<{ pk: number; nome: string } | null>(null)
-  // CTOs do Controllr: cor de cada uma (bolinha no cartão e no alerta).
-  // Complemento — se falhar, usa a cor padrão.
+  // Cor de cada CTO; se falhar, cor padrão.
   const [dpsPorPk, setDpsPorPk] = useState<Map<number, DpDto>>(new Map())
   const [ligandoPk, setLigandoPk] = useState<number | null>(null)
 
@@ -102,8 +100,7 @@ export default function ClientesOffline() {
       setCpes((atual) => [...atual, ...resposta.results])
       setTotal(resposta.total)
     } catch (excecao) {
-      // Falhar aqui não apaga a lista já carregada — só avisa e para de
-      // buscar mais sozinho (puxar para atualizar recomeça).
+      // Falha mantém o que já carregou.
       setErro(excecao instanceof ApiError ? excecao.message : 'Não foi possível carregar mais clientes.')
     } finally {
       setCarregandoMais(false)
@@ -124,8 +121,7 @@ export default function ClientesOffline() {
     }
   }
 
-  // Todos os itens com grupo, do que caiu mais recente para o mais antigo;
-  // "nunca conectou" no fim.
+  // Do que caiu mais recente ao mais antigo; "nunca conectou" no fim.
   const itens = useMemo<ItemOffline[]>(() => {
     const agora = Date.now()
     return cpes
@@ -254,7 +250,7 @@ export default function ClientesOffline() {
         <CabecalhoTela
           icone={LuWifiOff}
           cor={CORES.offline}
-          titulo="Clientes Offline"
+          titulo="Clientes offline"
         />
 
         {!carregando && (cpes.length > 0 || erro == null) && (
@@ -284,7 +280,7 @@ export default function ClientesOffline() {
         )}
 
         {!carregando && erro && cpes.length === 0 && (
-          <EstadoErro mensagem={erro} cor={CORES.offline} onTentarDeNovo={carregar} />
+          <EstadoErro mensagem={erro} onTentarDeNovo={carregar} />
         )}
 
         {!carregando && !erro && cpes.length === 0 && (

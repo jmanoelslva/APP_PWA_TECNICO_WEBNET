@@ -4,10 +4,7 @@ import { useFecharComVoltar } from '../hooks/useFecharComVoltar'
 import { textoQrWifi } from '../utils/wifiQr'
 import './ModalQrWifi.css'
 
-/**
- * QR Code do Wi-Fi para o cliente apontar a câmera e conectar sem digitar
- * a senha. Gerado no próprio aparelho (nada sai do app).
- */
+/** QR do Wi-Fi gerado no aparelho. */
 export default function ModalQrWifi({
   aberto,
   rede,

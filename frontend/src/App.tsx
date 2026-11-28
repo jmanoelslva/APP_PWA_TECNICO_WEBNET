@@ -25,8 +25,7 @@ const Login = lazy(() => import('./pages/Login'))
 const OnuStatus = lazy(() => import('./pages/OnuStatus'))
 const Suporte = lazy(() => import('./pages/Suporte'))
 
-// Telas onde a barra de navegação não aparece: login (ainda sem sessão) e
-// o chat de uma OS (já tem sua própria barra fixa de envio no rodapé).
+// Sem barra: login e chat do chamado (tem barra própria).
 function mostrarBottomNav(pathname: string): boolean {
   if (pathname === '/login') return false
   if (pathname.startsWith('/suporte/')) return false
@@ -37,8 +36,7 @@ function App() {
   const { logado } = useSessao()
   const location = useLocation()
 
-  // Versão nova já instalada: a troca de tela recarrega já na tela de
-  // destino (ver utils/atualizacaoApp.ts).
+  // Versão nova: recarrega na troca de tela.
   useEffect(() => {
     aplicarVersaoNovaSePreciso()
   }, [location.pathname])

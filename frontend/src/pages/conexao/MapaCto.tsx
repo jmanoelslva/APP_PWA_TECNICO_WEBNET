@@ -34,19 +34,15 @@ export interface ConectadosDaCto {
 const COR_CONECTADO_ONLINE = '#2e9e44'
 const COR_CONECTADO_OFFLINE = '#d9463c'
 
-// Mesmas imagens do "Mapa - Informações" do painel do Controllr (Leaflet +
-// satélite com ruas do Google, sem chave) — o técnico vê o mesmo mapa nos
-// dois lugares.
+// Mesmas imagens do mapa do painel do Controllr (Google satélite, sem chave).
 const URL_SATELITE = 'https://{s}.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}'
 // Cor das CTOs sem dp_color e dos itens do projeto sem estilo no KMZ.
 const COR_PADRAO_CTO = '#555555'
 const COR_PADRAO_PROJETO = '#ffcc00'
-// Raio pedido ao backend em volta do centro; só busca de novo quando o
-// centro anda mais da metade disso.
+// Busca de novo só quando o centro anda mais da metade do raio.
 const RAIO_PROJETO_M = 1500
 
-// Leaflet põe tooltip de texto via innerHTML — nome vindo do Controllr ou
-// do KMZ vai como texto puro, nunca como HTML.
+// Tooltip como texto, nunca HTML.
 function texto(conteudo: string): HTMLElement {
   const span = document.createElement('span')
   span.textContent = conteudo
@@ -58,13 +54,7 @@ function ocupacao(dp: DpDto): string {
   return dp.limite ? ` — ${dp.ativos}/${dp.limite}` : ` — ${dp.ativos} ativo(s)`
 }
 
-/**
- * Miniatura do mapa no bloco CTO: CTOs do Controllr (cor e ocupação do
- * próprio cadastro), a CTO escolhida em destaque, a localização do técnico,
- * o endereço do cliente e, quando o servidor tem o KMZ do projeto, os cabos
- * e caixas do projeto por baixo. Tocar numa CTO só a escolhe no campo —
- * gravar continua sendo no botão "Salvar CTO".
- */
+/** Mapa da CTO: CTOs do Controllr, técnico, endereço do cliente e o projeto (KMZ). Tocar só escolhe; gravar é no Salvar. */
 export default function MapaCto({
   centro,
   dps,
@@ -92,8 +82,7 @@ export default function MapaCto({
   onSelecionar: (dp: DpDto) => void
   // Botão "minha localização" tocado antes de o GPS responder.
   onSemLocalizacao: () => void
-  // Mapa de CTOs: ampliar ocupa a tela inteira (a tela desenha o cartão da
-  // CTO por cima). Na Conexão, ampliar só aumenta a altura.
+  // Mapa de CTOs: tela inteira; na Conexão só aumenta a altura.
   telaCheia?: boolean
   aoAmpliar?: (ampliado: boolean) => void
 }) {
@@ -125,8 +114,7 @@ export default function MapaCto({
       maxZoom: 21,
       attribution: 'Imagens © Google',
     }).addTo(mapa)
-    // Projeto numa camada abaixo das CTOs (cada uma com o próprio canvas),
-    // senão um cabo redesenhado depois cobre as CTOs e rouba o toque.
+    // Projeto abaixo das CTOs, para não roubar o toque.
     mapa.createPane('projeto').style.zIndex = '390'
     mapa.createPane('ctos').style.zIndex = '410'
     camadasRef.current = {
@@ -187,14 +175,12 @@ export default function MapaCto({
     selecionada?.bringToFront()
   }, [dps, selecionadaPk])
 
-  // Chave por valor (não por referência): o pai recria o objeto do cliente e
-  // a lista de ligações a cada render, e isso não pode redesenhar o mapa.
+  // Chave por valor: objetos recriados a cada render não redesenham.
   const chaveLigacoes = cliente
     ? `${cliente.lat},${cliente.lng}|${ligacoes.map((l) => `${l.lat},${l.lng},${l.rotulo}`).join(';')}`
     : ''
 
-  // Endereço do cliente e traçado até as CTOs dele: só redesenha quando o
-  // cliente ou as CTOs mudam — nunca a cada leitura do GPS.
+  // Redesenha só quando o cliente ou as CTOs mudam.
   useEffect(() => {
     const camadas = camadasRef.current
     if (!camadas) return
@@ -202,8 +188,7 @@ export default function MapaCto({
     if (cliente) {
       for (const ligacao of ligacoes) {
         const metros = distanciaMetros(cliente.lat, cliente.lng, ligacao.lat, ligacao.lng)
-        // Rótulo ao lado da linha, nunca em cima dela: linha mais deitada →
-        // rótulo acima; mais em pé → à direita.
+        // Rótulo ao lado da linha, conforme a inclinação.
         const dx = Math.abs(ligacao.lng - cliente.lng) * Math.cos((cliente.lat * Math.PI) / 180)
         const dy = Math.abs(ligacao.lat - cliente.lat)
         const deitada = dx >= dy
@@ -237,8 +222,7 @@ export default function MapaCto({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chaveLigacoes])
 
-  // Clientes ligados na CTO tocada: linha tracejada da CTO até o endereço,
-  // verde online e vermelha offline. Redesenha só quando os dados mudam.
+  // Conexões da CTO tocada: verde online, vermelho offline.
   const chaveConectados = conectados
     ? `${conectados.origem.lat},${conectados.origem.lng}|${conectados.pontos
         .map((p) => `${p.lat},${p.lng},${p.rotulo},${p.online}`)
@@ -276,8 +260,7 @@ export default function MapaCto({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chaveConectados])
 
-  // Técnico: os marcadores são criados uma vez e depois só mudam de lugar
-  // (setLatLng/setRadius) — recriar a cada leitura do GPS engasga o zoom.
+  // Marcadores do técnico só mudam de lugar.
   useEffect(() => {
     const mapa = mapaRef.current
     if (!mapa) return
@@ -320,8 +303,7 @@ export default function MapaCto({
     }
   }, [minhaLocalizacao?.lat, minhaLocalizacao?.lng, precisaoM])
 
-  // Cliente com CTO longe: enquadra o traçado inteiro uma vez por cliente/CTO
-  // (não a cada leitura do GPS, nem ao digitar a porta, que só muda o rótulo).
+  // Enquadra o traçado uma vez por cliente/CTO.
   const chaveEnquadrar = cliente ? `${cliente.lat},${cliente.lng}|${ligacoes.map((l) => `${l.lat},${l.lng}`).join(';')}` : ''
   useEffect(() => {
     const mapa = mapaRef.current
@@ -339,9 +321,7 @@ export default function MapaCto({
     mapaRef.current?.setView([minhaLocalizacao.lat, minhaLocalizacao.lng], 19)
   }
 
-  // Projeto da rede (KMZ no servidor). Só a busca mais recente desenha —
-  // não cancela no cleanup, senão um centro que andou pouco (e por isso
-  // não busca de novo) descartaria a resposta que ainda estava a caminho.
+  // Só a busca mais recente desenha.
   const buscaProjetoRef = useRef(0)
   useEffect(() => {
     const anterior = ultimoCentroProjetoRef.current

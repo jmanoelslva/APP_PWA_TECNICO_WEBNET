@@ -1,4 +1,4 @@
-import { useEffect, useState, type CSSProperties } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { LuCable, LuFileText, LuLocateFixed, LuMap, LuMapPin, LuPencil, LuPlus, LuUser, LuWifi } from 'react-icons/lu'
 import {
@@ -44,17 +44,12 @@ import {
 import './DetalheCliente.css'
 import { useFecharComVoltar } from '../hooks/useFecharComVoltar'
 
-// Resumo de conexão + ONU de um CPE, carregado à parte (endpoints
-// diferentes de /clientes/{pk}) para já mostrar aqui na tela do cliente
-// o que o técnico normalmente só via depois de entrar em Conexão/ONU —
-// os links para essas telas continuam existindo, para ações (revelar
-// senha, forçar atualização da ONU etc).
+// Resumo de conexão e ONU de cada CPE, carregado à parte.
 interface ResumoConexao {
   carregando: boolean
   cpe: CpeDto | null
   onu: OnuDto | null
-  // Consulta da ONU respondeu e não há ONU (esconde o botão "ONU", que
-  // levaria a uma tela vazia). Falha na consulta não conta: o botão fica.
+  // Sem ONU, esconde o botão (falha na consulta não conta).
   semOnu: boolean
   // Sessão RADIUS agora: true/false; null se a consulta falhou.
   online: boolean | null
@@ -62,10 +57,7 @@ interface ResumoConexao {
   lidoEm: number | null
 }
 
-// contract_sign_code/info/draw/ip/hash existem na resposta da API mas
-// sem descrição na doc oficial (só sign_date/sign_doc_link têm
-// significado conhecido, tratados à parte). Mostrados de forma genérica
-// em vez de um rótulo/tradução inventado.
+// Campos de assinatura sem descrição na doc: rótulo genérico.
 function rotuloCampoAssinatura(chave: string): string {
   return chave
     .replace(/^contract_sign_/, '')
@@ -88,8 +80,6 @@ function camposAssinaturaExtra(contrato: ContratoDto): Array<[string, string]> {
 
 type AbaCliente = 'conexoes' | 'contratos' | 'contato'
 
-// Telefones e endereços juntos em "Contato": é onde se procura como falar
-// com o cliente e onde ele mora.
 const ABAS: Aba<AbaCliente>[] = [
   { chave: 'conexoes', rotulo: 'Conexões' },
   { chave: 'contratos', rotulo: 'Contratos' },
@@ -148,9 +138,7 @@ function DetalheClienteConteudo() {
     }
   }
 
-  // Um CPE por vez, em paralelo entre si — cada um busca sua conexão e
-  // sua ONU juntas, sem travar os outros CPEs nem o resto da tela se um
-  // deles falhar (ex: cliente sem ONU cadastrada, só CPE).
+  // Um CPE por vez, em paralelo; falha de um não trava os outros.
   function carregarResumosConexao(listaCpes: CpeComboDto[]) {
     for (const cpe of listaCpes) {
       if (cpe.cpe_pk == null) continue
@@ -204,8 +192,6 @@ function DetalheClienteConteudo() {
               ? {
                   clientPk: pk,
                   cliente: nome,
-                  // Com uma conexão só, ela entra no atendimento; com várias,
-                  // fica a que o técnico abrir.
                   ...(cpes.length === 1 ? { cpePk: cpes[0].cpe_pk, pppoe: cpes[0].cpe_username } : {}),
                 }
               : { clientPk: pk }
@@ -219,7 +205,7 @@ function DetalheClienteConteudo() {
         )}
 
         {!carregando && erro && (
-          <EstadoErro mensagem={erro} cor={CORES.cliente} onTentarDeNovo={carregar} />
+          <EstadoErro mensagem={erro} onTentarDeNovo={carregar} />
         )}
 
         {!carregando && !erro && (
@@ -393,7 +379,6 @@ function DetalheClienteConteudo() {
                             target="_blank"
                             rel="noreferrer"
                             className="botao botao-secundario botao-pequeno botao-largo"
-                            style={{ '--botao-cor': CORES.cliente } as CSSProperties}
                           >
                             <LuFileText size={16} /> Ver contrato assinado
                           </a>
@@ -427,7 +412,6 @@ function DetalheClienteConteudo() {
                   <button
                     type="button"
                     className="botao botao-secundario botao-pequeno botao-largo"
-                    style={{ '--botao-cor': CORES.cliente } as CSSProperties}
                     onClick={() => setAdicionandoTelefone(true)}
                   >
                     <LuPlus size={16} /> Adicionar telefone
@@ -488,7 +472,6 @@ function DetalheClienteConteudo() {
         {enderecoEditando && (
           <ModalEditarEndereco
             endereco={enderecoEditando}
-            corDestaque={CORES.cliente}
             abaInicial={abaEnderecoInicial}
             onFechar={() => setEnderecoEditando(null)}
             onSalvo={(atualizado) => {
@@ -518,11 +501,7 @@ function DetalheClienteConteudo() {
             onSalvo={() => {
               setAdicionandoTelefone(false)
               toast('Telefone adicionado com sucesso.', 'sucesso')
-              // Recarrega em vez de montar o registro na mão — o phone_pk
-              // de verdade só vem do Controllr, e é mais simples pegar a
-              // lista atualizada inteira do que tentar adivinhar/extrair
-              // isso da resposta crua do /telefones (results não tem tipo
-              // garantido, ver criarTelefone em api/client.ts).
+              // Recarrega para pegar o phone_pk real.
               carregar()
             }}
           />
@@ -551,10 +530,7 @@ function ModalEditarTelefone({
     if (!telefone.phone_pk) return
     setSalvando(true)
     try {
-      // Reenvia o registro inteiro (identificação, operadora, tipo etc.)
-      // como já veio carregado — só phone_number muda aqui; o Controllr
-      // exige o telefone completo no update (ver backend/app/routers/
-      // telefones.py).
+      // phone/update exige o registro completo.
       await atualizarTelefone(telefone.phone_pk, { ...telefone, phone_number: numero })
       onSalvo({ ...telefone, phone_number: numero })
     } catch (excecao) {
@@ -576,7 +552,6 @@ function ModalEditarTelefone({
           <button className="botao botao-secundario" onClick={onFechar}>Cancelar</button>
           <button aria-busy={salvando}
             className="botao botao-primario"
-            style={{ '--botao-cor': CORES.cliente } as CSSProperties}
             disabled={salvando}
             onClick={salvar}
           >
@@ -635,7 +610,6 @@ function ModalAdicionarTelefone({
           <button className="botao botao-secundario" onClick={onFechar}>Cancelar</button>
           <button aria-busy={salvando}
             className="botao botao-primario"
-            style={{ '--botao-cor': CORES.cliente } as CSSProperties}
             disabled={salvando}
             onClick={salvar}
           >
@@ -647,11 +621,7 @@ function ModalAdicionarTelefone({
   )
 }
 
-/**
- * Uma instância por cliente: trocar de cliente sem sair da tela (aviso de OS,
- * link, busca) recomeça do zero — sem anexos, checklist, textos ou janelas
- * da anterior presos na tela.
- */
+/** key por cliente: trocar de cliente recomeça o estado. */
 export default function DetalheCliente() {
   const { clientPk } = useParams<{ clientPk: string }>()
   return <DetalheClienteConteudo key={clientPk} />

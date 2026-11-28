@@ -8,20 +8,12 @@ interface Props {
   onFechar: () => void
 }
 
-// Formatos usados nas etiquetas de ONU/equipamento — Code128/Code39 nos
-// modelos mais antigos, QR nos mais novos. EAN/UPC entram de brinde
-// (mesma detecção, sem custo extra) caso apareça outro tipo de etiqueta.
+// Code128/Code39 nas etiquetas antigas, QR nas novas.
 const FORMATOS_SUPORTADOS = ['qr_code', 'code_128', 'code_39', 'ean_13', 'ean_8', 'upc_a', 'upc_e', 'codabar', 'itf']
 
 const INTERVALO_LEITURA_MS = 300
 
-/**
- * Leitor de código de barras/QR pela câmera — usa a Barcode Detection API
- * nativa (Chrome/Android, sem biblioteca externa: ver
- * src/types/barcode-detector.d.ts). Sem suporte no navegador, mostra
- * aviso e permite só fechar — o técnico continua podendo digitar o
- * serial manualmente no campo de busca.
- */
+/** Leitor pela Barcode Detection API nativa; sem suporte, só avisa. */
 export default function LeitorCodigoBarras({ onDetectado, onFechar }: Props) {
   // "Voltar" do celular fecha a janela.
   useFecharComVoltar(true, onFechar)

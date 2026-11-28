@@ -1,6 +1,4 @@
-// "Por que está sem internet?" — cruza contrato, conexão, sessão PPPoE,
-// ONU (estado e sinal) e quedas, e devolve um veredito com o próximo
-// passo. Regra pura (sem chamada), testada em diagnostico.test.ts.
+// "Por que está sem internet?": veredito e próximo passo (regra pura).
 
 import { nivelSinalOnu } from './formatacao'
 import type { ResumoQuedas } from './quedas'
@@ -25,8 +23,7 @@ export interface EntradaDiagnostico {
   quedas?: ResumoQuedas | null
 }
 
-// onu_state no Controllr (lido ao vivo em 28/11): Online, Up, Offline,
-// Down. Os demais termos cobrem variações de fabricante.
+// onu_state no Controllr: Online, Up, Offline, Down; o resto cobre outros fabricantes.
 const ONU_SEM_LINK = /\b(los|offline|off-line|dying|dyinggasp|power ?off|down|inativ|desconect)/i
 
 export function onuSemLink(state: string | null | undefined): boolean {

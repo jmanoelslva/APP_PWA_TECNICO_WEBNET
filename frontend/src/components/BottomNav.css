@@ -73,9 +73,6 @@
   font-weight: 800;
 }
 
-/* 6 itens (5 do menu + Sair) num espaço que antes era pensado para 5 —
-   rótulos maiores ("Ferramentas") precisam encolher em vez de quebrar
-   linha ou vazar da faixa. */
 .bottom-nav-item span {
   max-width: 100%;
   overflow: hidden;

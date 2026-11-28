@@ -10,12 +10,7 @@ interface Props {
   children: ReactNode
 }
 
-/**
- * Puxar a tela para baixo com a rolagem já no topo dispara uma atualização
- * — feito na mão (sem lib): só reage quando o toque começa com a página
- * no topo, usa listener nativo (preventDefault durante o arrasto exige
- * passive:false, que o React não oferece direto para eventos de toque).
- */
+/** Puxar para atualizar, feito à mão (preventDefault exige listener passive:false). */
 export default function PullToRefresh({ aoAtualizar, children }: Props) {
   const [distancia, setDistancia] = useState(0)
   const [arrastando, setArrastando] = useState(false)
@@ -32,9 +27,7 @@ export default function PullToRefresh({ aoAtualizar, children }: Props) {
     const elemento = containerRef.current
     if (!elemento) return
 
-    // Toque dentro de uma lista com rolagem própria (ex.: resultados da
-    // busca da tela inicial) é rolagem dessa lista — subir a lista não
-    // pode virar "puxar para atualizar" só porque a página está no topo.
+    // Lista com rolagem própria não dispara.
     function dentroDeRolagemPropria(alvo: EventTarget | null): boolean {
       let no = alvo instanceof Element ? alvo : null
       while (no && no !== elemento) {

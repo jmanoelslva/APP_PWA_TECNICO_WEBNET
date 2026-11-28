@@ -19,7 +19,7 @@ import { useToast } from '../components/Toast/useToast'
 import { CORES } from '../utils/cores'
 import { detectarTipoBusca, formatarDocumento } from '../utils/formatacao'
 import { ocupaPorta } from '../utils/portasCto'
-import { corMaisProxima, ocupacaoDaCto } from '../utils/coresFibra'
+import { corMaisProxima } from '../utils/coresFibra'
 import CartaoCto, { type ConexaoDoCliente } from './mapa/CartaoCto'
 import ModalCto from './mapa/ModalCto'
 import { distanciaMetros, formatarDistancia, useLocalizacaoAoVivo } from './conexao/localizacao'
@@ -69,21 +69,14 @@ function descreverEndereco(endereco: EnderecoDto): string {
   return [rua, endereco.address_neighborhood].filter(Boolean).join(' — ') || 'Endereço sem descrição'
 }
 
-/**
- * Mapa com as CTOs do Controllr e a posição do técnico ao vivo, sem
- * precisar abrir uma conexão — para ver a CTO mais próxima do cliente
- * antes do atendimento. Com um cliente buscado, as distâncias passam a ser
- * a partir do endereço dele (coordenada cadastrada no Controllr). Só
- * consulta: escolher a CTO de um cliente continua no bloco CTO da Conexão.
- */
+/** Mapa de CTOs com o técnico ao vivo; com cliente buscado, distâncias a partir do endereço dele. */
 export default function MapaCtos() {
   const { toast } = useToast()
   const [dps, setDps] = useState<DpDto[] | null>(null)
   const [erro, setErro] = useState<string | null>(null)
   const [selecionadaPk, setSelecionadaPk] = useState<number | null>(null)
   const aoVivo = useLocalizacaoAoVivo()
-  // Primeira leitura do GPS, fixa: centraliza uma vez só, sem puxar o mapa
-  // de volta a cada atualização.
+  // Centraliza só na primeira leitura.
   const [primeiraPosicao, setPrimeiraPosicao] = useState<{ lat: number; lng: number } | null>(null)
   if (aoVivo && !primeiraPosicao) setPrimeiraPosicao({ lat: aoVivo.lat, lng: aoVivo.lng })
 
@@ -97,7 +90,6 @@ export default function MapaCtos() {
   const [ctosCliente, setCtosCliente] = useState<CtoDoCliente[] | null>(null)
   // Todas as conexões do cliente buscado (para "Usar esta CTO").
   const [conexoesCliente, setConexoesCliente] = useState<ConexaoDoCliente[]>([])
-  const [soLivre, setSoLivre] = useState(false)
   const [mostrarMais, setMostrarMais] = useState(false)
   const [telaCheia, setTelaCheia] = useState(false)
   const [janela, setJanela] = useState<JanelaCto>(null)
@@ -135,8 +127,7 @@ export default function MapaCtos() {
 
   function aoBuscar(evento: FormEvent) {
     evento.preventDefault()
-    // A busca já roda sozinha; Enter só fecha o teclado (e, com um único
-    // cliente encontrado, já o escolhe).
+    // Enter fecha o teclado (com um único cliente, já escolhe).
     ;(document.activeElement as HTMLElement | null)?.blur()
     if (resultados?.length === 1) {
       setListaAberta(false)
@@ -148,8 +139,7 @@ export default function MapaCtos() {
     setBuscando(true)
     // null: ainda lendo (ou falhou) — não mostra "sem CTO" à toa.
     setCtosCliente(null)
-    // CTO e porta já gravadas nas conexões do cliente — complemento: se
-    // falhar, o mapa segue só com o endereço.
+    // Opcional: sem isso, só o endereço.
     buscarCpe({ client_pk: resultado.client_pk })
       .then((resposta) => {
         setConexoesCliente(
@@ -205,8 +195,7 @@ export default function MapaCtos() {
     setSelecionadaPk(null)
   }
 
-  // Vindo de outra tela (ex.: Clientes Offline → Mapa): ?cliente=<client_pk>
-  // abre já com o cliente escolhido e o traçado até a CTO dele.
+  // ?cliente= abre com o cliente escolhido.
   const [params] = useSearchParams()
   const clienteDaUrl = Number(params.get('cliente'))
   useEffect(() => {
@@ -226,9 +215,7 @@ export default function MapaCtos() {
     carregarCtos()
   }, [])
 
-  // Mesma lista (mesma referência) enquanto as CTOs não mudam — uma lista
-  // nova a cada render fazia o mapa apagar e redesenhar todas as CTOs a
-  // cada leitura do GPS.
+  // Mesma referência enquanto as CTOs não mudam, para não redesenhar a cada leitura do GPS.
   const comCoordenada = useMemo(
     () => (dps ?? []).filter((dp): dp is DpDto & { lat: number; lng: number } => dp.lat != null && dp.lng != null),
     [dps],
@@ -271,14 +258,13 @@ export default function MapaCtos() {
     () =>
       referencia
         ? comCoordenada
-            .filter((dp) => !soLivre || ocupacaoDaCto(dp) === 'livre' || ocupacaoDaCto(dp) === 'pouca')
             .map((dp) => ({ dp, distanciaM: distanciaMetros(referencia.lat, referencia.lng, dp.lat, dp.lng) }))
             .sort((a, b) => a.distanciaM - b.distanciaM)
             .slice(0, mostrarMais ? QTD_MOSTRAR_MAIS : QTD_MAIS_PROXIMAS + 1)
         : [],
     // referencia muda de objeto a cada render do cliente; o que importa é a coordenada
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [comCoordenada, referencia?.lat, referencia?.lng, soLivre, mostrarMais],
+    [comCoordenada, referencia?.lat, referencia?.lng, mostrarMais],
   )
   // Uma a mais que o mostrado indica que há mais para "Mostrar mais".
   const haMais = !mostrarMais && maisProximas.length > QTD_MAIS_PROXIMAS
@@ -306,8 +292,7 @@ export default function MapaCtos() {
         : [],
     [enderecoCliente, ctosCliente, comCoordenada],
   )
-  // Centro: a CTO tocada; senão, o cliente buscado; senão, o técnico; sem
-  // GPS, a primeira CTO.
+  // Centro: CTO tocada, cliente, técnico ou a primeira CTO.
   const centro = selecionada
     ? { lat: selecionada.lat, lng: selecionada.lng }
     : enderecoCliente
@@ -435,7 +420,7 @@ export default function MapaCtos() {
         </div>
       )}
 
-      {erro && <EstadoErro mensagem={erro} cor={CORES.conexao} onTentarDeNovo={carregarCtos} />}
+      {erro && <EstadoErro mensagem={erro} onTentarDeNovo={carregarCtos} />}
       {!erro && !dps && <Skeleton height={260} className="mapa-ctos-carregando" />}
       {dps && !centro && <p className="mapa-ctos-aviso">Nenhuma CTO cadastrada tem coordenada.</p>}
 
@@ -476,14 +461,6 @@ export default function MapaCtos() {
         <section className="mapa-ctos-proximas">
           <div className="mapa-ctos-proximas-topo">
             <h2>{enderecoCliente ? 'Mais próximas do cliente' : 'Mais próximas de você'}</h2>
-            <button
-              type="button"
-              className="mapa-ctos-filtro"
-              aria-pressed={soLivre}
-              onClick={() => setSoLivre((v) => !v)}
-            >
-              Só com porta livre
-            </button>
           </div>
           {!referencia && <p className="mapa-ctos-aviso">Aguardando sua localização…</p>}
           {!enderecoCliente && aoVivo && (
@@ -533,9 +510,6 @@ export default function MapaCtos() {
               </li>
             ))}
           </ul>
-          {soLivre && referencia && proximasVisiveis.length === 0 && (
-            <p className="mapa-ctos-aviso">Nenhuma CTO com porta livre por perto.</p>
-          )}
           {haMais && (
             <button type="button" className="botao botao-secundario botao-largo mapa-ctos-mais" onClick={() => setMostrarMais(true)}>
               Mostrar mais
@@ -570,7 +544,7 @@ export default function MapaCtos() {
             </>
           )}
           <button type="button" className="botao botao-secundario botao-largo acao-registro" onClick={() => setJanela({ tipo: 'nova' })}>
-            <LuPlus size={18} /> Cadastrar CTO nova
+            <LuPlus size={18} /> Cadastrar CTO
           </button>
         </section>
       )}

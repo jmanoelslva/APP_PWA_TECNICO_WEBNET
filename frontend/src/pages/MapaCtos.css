@@ -227,26 +227,6 @@
   margin: 0;
 }
 
-.mapa-ctos-filtro {
-  flex: none;
-  min-height: 40px;
-  padding: 0 12px;
-  border: 1px solid var(--cor-borda);
-  border-radius: 999px;
-  background: var(--cor-superficie);
-  color: var(--cor-texto-secundario);
-  font-family: inherit;
-  font-size: 13px;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.mapa-ctos-filtro[aria-pressed='true'] {
-  border-color: var(--cor-conexao);
-  background: var(--cor-conexao);
-  color: #ffffff;
-}
-
 .mapa-ctos-mais {
   margin-top: 10px;
 }

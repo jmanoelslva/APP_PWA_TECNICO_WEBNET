@@ -1,16 +1,11 @@
 import { primeiroNome } from './mensagensCliente'
 
-/**
- * Como o técnico aparece no app e nas mensagens ao cliente: primeiro nome do
- * cadastro do Controllr ("Edson Santos" → "Edson"); sem nome, o usuário com a
- * inicial maiúscula ("edsonsantos" → "Edsonsantos").
- */
+/** Primeiro nome do Controllr; sem nome, o usuário com inicial maiúscula. */
 export function nomeExibicao(tecnico: { username: string; nome?: string | null } | null | undefined): string {
   return primeiroNome(tecnico?.nome) || primeiroNome(tecnico?.username)
 }
 
-// O login acontece antes de o app saber o nome: fica guardado no aparelho
-// (só o nome de exibição, junto do usuário a que pertence).
+// Nome guardado para o "Olá" do login.
 const CHAVE_NOME = 'webnet-tecnico-nome-lembrado'
 
 export function lembrarNome(username: string, nome: string | null | undefined): void {

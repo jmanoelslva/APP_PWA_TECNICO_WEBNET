@@ -9,26 +9,16 @@ export interface OsDoDia {
   diaAnterior: boolean
 }
 
-/**
- * Atrasada: já passou do dia E hora agendados e o técnico ainda não iniciou
- * (OS em andamento não é atraso — ele já está nela). Fechada/cancelada não.
- */
+/** Atrasada: passou do horário e não iniciou. */
 export function osAtrasada(os: OrdemServicoDto, agora: Date = new Date()): boolean {
   if (!os.op_date_sched || os.op_date_close || os.op_date_cancel || os.etapa === 'iniciada') return false
   // Mesmo formato "AAAA-MM-DD HH:mm" dos dois lados: comparar como texto.
   return os.op_date_sched.slice(0, 16) < dataParaFormatoServidor(agora).slice(0, 16)
 }
 
-/**
- * OS do técnico que contam para "hoje": agendadas para hoje ou atrasadas
- * (dia anterior e ainda em aberto), da mais antiga para a mais nova — a
- * primeira é a "próxima OS". As de dias seguintes ficam de fora. O
- * backend já tira as finalizadas (ver ordens_servico.py::_sem_finalizadas);
- * fechada/cancelada é conferida aqui de novo por segurança.
- */
+/** OS de hoje e atrasadas, da mais antiga à mais nova; a primeira é a próxima. */
 export function osDoDia(ordens: OrdemServicoDto[], agora: Date = new Date()): OsDoDia[] {
-  // op_date_sched vem como "YYYY-MM-DD HH:mm:ss" (hora local do Controllr):
-  // comparar só a parte da data como texto evita fuso do navegador.
+  // Compara a data como texto (evita fuso).
   const hoje = dataParaFormatoServidor(agora).slice(0, 10)
   return ordens
     .filter((os) => !!os.op_date_sched && !os.op_date_close && !os.op_date_cancel)
@@ -37,11 +27,7 @@ export function osDoDia(ordens: OrdemServicoDto[], agora: Date = new Date()): Os
     .map((os) => ({ os, atrasada: osAtrasada(os, agora), diaAnterior: os.op_date_sched!.slice(0, 10) < hoje }))
 }
 
-/**
- * OS em aberto agendadas para depois de hoje, da mais próxima para a mais
- * distante — as de dias seguintes que osDoDia deixa de fora, da mesma lista
- * já carregada (sem consulta a mais).
- */
+/** OS de dias seguintes, da mais próxima. */
 export function osFuturas(ordens: OrdemServicoDto[], agora: Date = new Date()): OrdemServicoDto[] {
   const hoje = dataParaFormatoServidor(agora).slice(0, 10)
   return ordens
@@ -72,11 +58,7 @@ export function horarioOs(item: OsDoDia): string {
   return `${dia}/${mes}${hora ? ` ${hora}` : ''}`
 }
 
-/**
- * Link do Google Maps já em modo rota (sai da localização atual do
- * celular). Usa as coordenadas do endereço quando houver; senão o
- * endereço escrito. null quando não há nada para onde ir.
- */
+/** Rota no Google Maps: coordenadas ou endereço escrito; null sem destino. */
 export function linkRota(endereco: EnderecoDto | null, os: OrdemServicoDto): string | null {
   let destino: string
   if (endereco?.address_latitude && endereco?.address_longitude) {
@@ -90,19 +72,12 @@ export function linkRota(endereco: EnderecoDto | null, os: OrdemServicoDto): str
   return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(destino)}`
 }
 
-/**
- * Primeiro telefone do cliente, só com dígitos (e "+"), para o link tel:.
- * Prefere a lista de telefones cadastrados; cai para o campo client_phones
- * do cliente (mesmo formato que extrairTelefones já trata).
- */
+/** Primeiro telefone (cadastrados, depois client_phones). */
 export function primeiroTelefone(telefones: TelefoneDto[], clientPhones?: string | null): string | null {
   return telefonesDoCliente(telefones, clientPhones)[0] ?? null
 }
 
-/**
- * Todos os números do cliente, na ordem (cadastrados primeiro), separando
- * campos com mais de um número — o botão de WhatsApp usa o primeiro celular.
- */
+/** Todos os números, cadastrados primeiro. */
 export function telefonesDoCliente(telefones: TelefoneDto[], clientPhones?: string | null): string[] {
   const numeros = [
     ...telefones.flatMap((t) => separarTelefones(t.phone_number)),
@@ -116,10 +91,7 @@ export function enderecoCurto(base: { address?: string; address_number?: string;
   return [base.address, base.address_number, base.address_neighborhood].filter(Boolean).join(', ')
 }
 
-/**
- * Quando é a OS, curto: "Hoje 09:00", "Amanhã 08:30", "Ontem 14:00" ou
- * "03/10 10:00". Atraso é com osAtrasada.
- */
+/** "Hoje 09:00", "Amanhã 08:30", "Ontem 14:00" ou "03/10 10:00". */
 export function quandoOs(sched: string | null | undefined, agora: Date = new Date()): string | null {
   if (!sched) return null
   const dia = sched.slice(0, 10)
@@ -137,10 +109,7 @@ export interface GrupoOs {
   ordens: OrdemServicoDto[]
 }
 
-/**
- * OS agrupadas por dia agendado ("Ontem", "Hoje", "Amanhã", "03/10"), da
- * mais antiga para a mais nova; as sem data agendada vão num grupo no fim.
- */
+/** Agrupadas por dia; sem data no fim. */
 export function agruparPorDia(ordens: OrdemServicoDto[], agora: Date = new Date()): GrupoOs[] {
   const ordenadas = [...ordens].sort((a, b) => {
     if (!a.op_date_sched) return b.op_date_sched ? 1 : 0

@@ -6,14 +6,8 @@ import { useToast } from '../../components/Toast/useToast'
 import { formatarStatusContrato } from '../../utils/formatacao'
 import { gradeDePortas, ocupanteDaPorta, portasDaCto, type CasaPorta } from '../../utils/portasCto'
 
-
-/**
- * Grade fixa com todas as portas da CTO escolhida: livre, ocupada (cheia,
- * bolinha na cor da situação do contrato), desta conexão ou em conflito. Tocar numa livre preenche o campo; tocar
- * numa ocupada mostra quem está nela, sem mudar o campo. Porta de contrato
- * com CPE desabilitado conta como livre, com o antigo ocupante no detalhe;
- * CPE habilitado ocupa mesmo com contrato cancelado (o Controllr recusa).
- */
+/** Grade de portas: livre, ocupada, desta conexão ou em conflito. CPE desabilitado libera a porta; habilitado ocupa (o
+   Controllr recusa). */
 export default function PortasCto({
   dpPk,
   limite,
@@ -241,8 +235,7 @@ function DetalhePorta({
             {outra && (
               <div className="acoes-cartao">
                 {liberavel && (
-                  // Contrato cancelado/desativado ainda com CPE habilitado prende a
-                  // porta: grava CTO e porta 0 nele (limpa) para usá-la nesta conexão.
+                  // Libera a porta gravando CTO e porta 0 no ocupante.
                   <button
                     type="button"
                     aria-busy={liberando}
@@ -259,8 +252,6 @@ function DetalhePorta({
                     Cancelar
                   </button>
                 ) : (
-                  // Para usar a porta, muda-se a do ocupante na própria conexão
-                  // dele, como edição normal.
                   <Link to={`/conexao?cpe_pk=${o.cpePk}&aba=cto`} className="botao botao-secundario botao-pequeno acao-rede" viewTransition>
                     Abrir conexão <LuArrowRight size={16} />
                   </Link>

@@ -1,9 +1,4 @@
-// Localização do técnico enviada junto com as ações (cabeçalho
-// X-Localizacao), para a auditoria. Nunca segura a ação: vai a última
-// leitura guardada; se estiver velha, pede outra em segundo plano para a
-// próxima ação. Só lê o GPS com a permissão já concedida — não abre o
-// pedido de permissão por conta própria. O servidor grava só nas ações de
-// campo (OS, conexão, ONU, endereço).
+// Última leitura do GPS no cabeçalho X-Localizacao. Não atrasa a ação nem pede permissão.
 
 export interface LeituraLocal {
   lat: number

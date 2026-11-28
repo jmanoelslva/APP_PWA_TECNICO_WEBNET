@@ -105,3 +105,13 @@ def test_criar_nome_repetido_recusa(cliente, monkeypatch):
     falso_controllr(monkeypatch, existentes=[{"dp_name": "VSJ-CTO-2.7"}])
     r = cliente.post("/dp/criar", json={"setor_pk": 16, "hub": 2, "numero": 7, "limite": 8, "cor": "#FF0000", "lat": -9.6, "lng": -36.6})
     assert r.status_code == 409
+
+
+def test_descricao_grava_e_vazia_volta_a_asterisco(cliente, monkeypatch):
+    enviados = falso_controllr(monkeypatch)
+    r = cliente.post("/dp/802/editar", json={"descricao": "  Poste   da esquina "})
+    assert r.status_code == 200 and enviados["update"]["dp_desc"] == "Poste da esquina"
+    # Igual ao que está gravado ("*") não é alteração.
+    assert cliente.post("/dp/802/editar", json={"descricao": ""}).status_code == 400
+    cliente.post("/dp/criar", json={"setor_pk": 16, "hub": 2, "numero": 7, "limite": 8, "cor": "#FF0000", "lat": -9.6, "lng": -36.6})
+    assert enviados["create"]["dp_desc"] == "*"

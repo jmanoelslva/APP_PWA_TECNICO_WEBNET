@@ -10,10 +10,7 @@ const ICONE: Record<SituacaoFechamento, ReactNode> = {
   verificando: <LuLoaderCircle size={22} aria-label="Consultando" />,
 }
 
-/**
- * Quadro "Antes de finalizar" da OS: cada item certo fica verde; o que
- * falta vem com o atalho para corrigir (`acao`, montado por quem chama).
- */
+/** "Antes de finalizar": itens certos em verde, os pendentes com atalho. */
 export default function ProntoParaFechar({
   itens,
   acao,

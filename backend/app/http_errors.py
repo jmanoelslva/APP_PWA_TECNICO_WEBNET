@@ -1,9 +1,7 @@
 import re
 from typing import Any
 
-# Mensagens do Controllr (em inglês ou cruas) traduzidas para o técnico.
-# O que não casar com nenhum padrão aparece como veio, sem o formato de
-# lista do Python (antes: "Detalhe do Controllr: [{'id': ..., 'msg': ...}]").
+# Mensagens do Controllr em português; o que não casar aparece como veio.
 _TRADUCOES: list[tuple[re.Pattern[str], str]] = [
     (re.compile(r"access denied", re.I), "Seu usuário não tem permissão para isso no Controllr."),
     # Formato real: "Duplicate port '14' (cpe_pk = N)" (CONTROLLR_API_NOTES.md).
@@ -40,12 +38,7 @@ def _mensagens(detalhes: Any) -> list[str]:
 
 
 def detalhe_erro(mensagem: str, resposta: Any) -> str:
-    """
-    Junta à mensagem do app o motivo devolvido pelo Controllr, em
-    português quando conhecido (ver _TRADUCOES). `errors` vem de
-    base.py::call_api_post (chave "errors" do JSON de resposta do
-    Controllr).
-    """
+    """Mensagem do app + motivo do Controllr traduzido (ver _TRADUCOES)."""
     motivos = _mensagens(getattr(resposta, "errors", None))
     if motivos:
         return f"{mensagem} {' '.join(motivos)}"
