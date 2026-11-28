@@ -1,7 +1,7 @@
 import os
 
 # Igual a "version" em frontend/package.json (SemVer, ver CHANGELOG.md).
-APP_VERSION = "1.33.0"
+APP_VERSION = "1.34.0"
 
 # Porta administrativa do Controllr (8443), usada por todas as chamadas do técnico.
 CONTROLLR_URL = os.environ.get("CONTROLLR_URL", "https://controllr.webnetse.com.br:8443")

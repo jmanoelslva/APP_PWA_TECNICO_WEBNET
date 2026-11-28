@@ -7,6 +7,8 @@ e este projeto adere ao [Versionamento Semântico](https://semver.org/lang/pt-BR
 
 ## [Não lançado]
 
+## [1.34.0] - 2026-11-28
+
 ### Adicionado
 
 - Mapa de CTOs: campo Descrição no cadastro e na edição da CTO (gravado na descrição do Controllr; vazio fica como antes).

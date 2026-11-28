@@ -41,6 +41,7 @@ TITULOS = {
     "1.30.1": "ONU certa pelo PPPoE e Antes de finalizar com atalhos direto no item",
     "1.30.2": "Mapa, pinça e listas roladas sem arrastar a janela",
     "1.32.2": "OS transferida mostra as etapas já feitas e Complemento em três linhas",
+    "1.34.0": "Descrição da CTO, mapa sem filtro redundante e código revisado",
     "1.33.0": "Barra do atendimento, diagnóstico da conexão, Mapa de CTOs com cadastro de CTO e potência óptica",
     "1.32.3": "Instalador recria o venv quando o Python do servidor muda",
     "1.32.1": "Nome do técnico nas mensagens ao cliente e telefones da OS em lista",

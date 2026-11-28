@@ -16,8 +16,6 @@ function apresentacao(tecnico: string): string {
   return tecnico ? `Sou ${tecnico}, técnico da WEBNET,` : 'Sou o técnico da WEBNET'
 }
 
-
-
 export const MENSAGENS_CLIENTE: MensagemCliente[] = [
   {
     chave: 'caminho',

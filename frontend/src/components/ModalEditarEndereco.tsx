@@ -176,7 +176,6 @@ export default function ModalEditarEndereco({ endereco, abaInicial = 'endereco',
     }
   }
 
-
   return (
     <div className="modal-editar-endereco-fundo" onClick={tentarFechar}>
       <div ref={janelaRef} className="modal-editar-endereco" onClick={(e) => e.stopPropagation()}>
