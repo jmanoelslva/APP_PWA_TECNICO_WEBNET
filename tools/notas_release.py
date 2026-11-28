@@ -26,28 +26,29 @@ ATUALIZAR = "sudo bash /opt/webnet-tecnico/deploy/install.sh"
 
 # Versões cujo commit da tag não resume a versão.
 TITULOS = {
+    "1.34.0": "Login novo, barra do atendimento, diagnóstico, cadastro de CTO e código revisado",
+    "1.31.0": "Clientes Offline como diagnóstico, endereço com mapa e portas da CTO",
+    "1.27.0": "Voltar como app nativo, auditoria completa e Mapa de CTOs",
+    "1.22.0": "Interface de campo, Conexão em abas, Configurações e jeito de app nativo",
+    "1.18.1": "App do técnico da WEBNET, puxar para atualizar e anexos da OS",
     "1.20.0": "Busca geral, Conexão em abas, Configurações e interface para campo",
-    "1.22.0": "Jeito de app nativo, checklist de saída, abas e busca corrigida",
     "1.23.0": "Aviso acima do botão de etapa da OS",
     "1.23.1": "Seleção de texto só nos campos de entrada",
     "1.23.2": "Botões da OS em grade, etiquetas visíveis e sem menu ao segurar",
     "1.23.3": "Voltar como app nativo, teclado certo nos campos e tela de trás parada",
     "1.25.0": "Auditoria completa: CTO, observação, etapas da OS, liberação financeira e login",
     "1.26.0": "Mapa de CTOs com busca de cliente e portas livres",
-    "1.27.0": "CTO e porta do cliente no Mapa de CTOs",
     "1.28.0": "Clientes Offline como diagnóstico, traçado até a CTO e app padronizado",
     "1.29.0": "OS pronta para fechar, portas da CTO, quedas recentes e buscas maiores",
     "1.30.0": "Endereço em tela cheia com mapa e CEP, botões padronizados e senhas na auditoria",
     "1.30.1": "ONU certa pelo PPPoE e Antes de finalizar com atalhos direto no item",
     "1.30.2": "Mapa, pinça e listas roladas sem arrastar a janela",
     "1.32.2": "OS transferida mostra as etapas já feitas e Complemento em três linhas",
-    "1.34.0": "Descrição da CTO, mapa sem filtro redundante e código revisado",
     "1.33.0": "Barra do atendimento, diagnóstico da conexão, Mapa de CTOs com cadastro de CTO e potência óptica",
     "1.32.3": "Instalador recria o venv quando o Python do servidor muda",
     "1.32.1": "Nome do técnico nas mensagens ao cliente e telefones da OS em lista",
     "1.32.0": "Login novo, cores por função, mensagens prontas e rascunho da finalização",
     "1.31.1": "Lista de OS completa, sem limite de 100",
-    "1.31.0": "Portas da CTO em grade, liberar porta e conexões da CTO no mapa",
     "1.24.0": "Mensagem e anexo no chamado, atalhos sem texto cortado e botões sem degradê",
     "1.0.0": "Primeira versão estável",
     "1.4.0": "Sessão do Controllr pelo cookie do login e detecção de sessão encerrada",
@@ -74,9 +75,20 @@ SECOES = {
 
 # O que mais o técnico precisa saber ao atualizar para a versão.
 EXTRA_ATUALIZAR = {
-    "1.28.0": "Esta versão muda o próprio instalador: rode o comando **duas vezes** (a primeira atualiza o código; a segunda aplica a chave das sessões e o novo serviço).",
     "1.0.0": "Primeira instalação: clone o repositório e rode `sudo bash deploy/install.sh`.",
+    "1.28.0": "Esta versão muda o próprio instalador: rode o comando **duas vezes** (a primeira atualiza o código; a segunda aplica a chave das sessões e o novo serviço).",
 }
+
+# Releases unificadas: a versão mantida leva as notas das absorvidas (só a tag
+# delas continua no GitHub; o CHANGELOG.md segue com todas).
+GRUPOS: dict[str, list[str]] = {
+    "1.18.1": ["1.18.0"],
+    "1.22.0": ["1.20.0"],
+    "1.27.0": ["1.26.0", "1.25.0", "1.24.0", "1.23.3", "1.23.2", "1.23.1", "1.23.0"],
+    "1.31.0": ["1.30.2", "1.30.1", "1.30.0", "1.29.0", "1.28.0"],
+    "1.34.0": ["1.33.0", "1.32.3", "1.32.2", "1.32.1", "1.32.0", "1.31.1"],
+}
+ABSORVIDAS = {v for vs in GRUPOS.values() for v in vs}
 
 # Depois de atualizar o servidor, o PWA instalado no celular pode seguir na versão em cache.
 DEPOIS = "Depois, feche e abra o app no celular (ou recarregue a página) para sair da versão em cache."
@@ -106,6 +118,28 @@ def desquebrar(texto: str) -> str:
     return "\n".join(linhas)
 
 
+def mesclar(corpos: list[str]) -> str:
+    """Junta os corpos de várias versões por seção, na ordem de SECOES."""
+    soltos: list[str] = []
+    secoes: dict[str, list[str]] = {}
+    for corpo in corpos:
+        atual = None
+        for linha in desquebrar(corpo).splitlines():
+            if linha.startswith("### "):
+                atual = linha[4:].strip()
+                secoes.setdefault(atual, [])
+            elif linha.strip():
+                destino = secoes[atual] if atual else soltos
+                if linha not in destino:
+                    destino.append(linha)
+    ordem = list(SECOES) + [k for k in secoes if k not in SECOES]
+    partes = soltos[:]
+    for k in ordem:
+        if secoes.get(k):
+            partes += ([""] if partes else []) + [f"### {k}", ""] + secoes[k]
+    return "\n".join(partes)
+
+
 def assunto(versao: str) -> str:
     if versao in TITULOS:
         return TITULOS[versao]
@@ -119,15 +153,17 @@ def assunto(versao: str) -> str:
     return s[:1].upper() + s[1:]
 
 
-def nota(versao: str, data: str, corpo: str, anterior: str | None) -> tuple[str, str]:
+def nota(versao: str, data: str, corpo: str, anterior: str | None, desde: str | None = None) -> tuple[str, str]:
     corpo = desquebrar(corpo)
     corpo = re.sub(r"^### (.+)$", lambda m: f"### {SECOES.get(m[1].strip(), m[1].strip())}", corpo, flags=re.M)
     d = date.fromisoformat(data).strftime("%d/%m/%Y")
-    partes = [f"**{PRODUTO}** · versão {versao} · {d}", "", corpo, "", "### 🚀 Como atualizar",
+    cab = f"versões {desde} a {versao}" if desde else f"versão {versao}"
+    partes = [f"**{PRODUTO}** · {cab} · {d}", "", corpo, "", "### 🚀 Como atualizar",
               "", "```bash", ATUALIZAR, "```"]
     partes += ["", DEPOIS]
-    if versao in EXTRA_ATUALIZAR:
-        partes += ["", EXTRA_ATUALIZAR[versao]]
+    for v in [versao, *GRUPOS.get(versao, [])]:
+        if v in EXTRA_ATUALIZAR:
+            partes += ["", EXTRA_ATUALIZAR[v]]
     partes += ["", "---", ""]
     if anterior:
         partes.append(f"[Comparar com a {anterior}]({REPO}/compare/v{anterior}...v{versao}) · "
@@ -147,15 +183,24 @@ def main() -> int:
     if not args.versao and not args.todas:
         ap.error("informe a versão ou --todas")
 
-    lista = versoes((RAIZ / "CHANGELOG.md").read_text(encoding="utf-8"))
+    todas = versoes((RAIZ / "CHANGELOG.md").read_text(encoding="utf-8"))
+    corpos = {v: c for v, _, c in todas}
+    lista = [x for x in todas if x[0] not in ABSORVIDAS]
     anteriores = {v: (lista[i + 1][0] if i + 1 < len(lista) else None) for i, (v, _, _) in enumerate(lista)}
     alvo = lista if args.todas else [x for x in lista if x[0] == args.versao]
     if not alvo:
-        print(f"versão {args.versao} não está no CHANGELOG.md", file=sys.stderr)
+        print(f"versão {args.versao} não está no CHANGELOG.md (ou foi unificada)", file=sys.stderr)
         return 1
 
     for v, d, corpo in alvo:
-        titulo, texto = nota(v, d, corpo, anteriores[v])
+        grupo = GRUPOS.get(v, [])
+        if grupo:
+            corpo = mesclar([corpo, *(corpos[g] for g in grupo)])
+        anterior = anteriores[v]
+        if anterior and subprocess.run(["git", "rev-parse", "-q", "--verify", f"refs/tags/v{anterior}"], cwd=RAIZ,
+                                       capture_output=True).returncode != 0:
+            anterior = None  # sem a tag (histórico recriado), o link de comparação quebraria
+        titulo, texto = nota(v, d, corpo, anterior, grupo[-1] if grupo else None)
         if not args.aplicar:
             print(f"# {titulo}\n\n{texto}")
             continue
