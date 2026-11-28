@@ -7,6 +7,7 @@
  */
 
 import { buscarTodasPaginas } from '../utils/paginacao'
+import { cabecalhoLocalizacao } from '../utils/localizacaoAuditoria'
 
 const API_BASE = '/api'
 const TEMPO_LIMITE_CONSULTA_MS = 30_000
@@ -102,11 +103,19 @@ async function get<T>(path: string, params?: Record<string, string | number | bo
   return tratarResposta<T>(response, path)
 }
 
+// Cabeçalhos das ações (envios): localização do técnico para a auditoria.
+function cabecalhosAcao(json: boolean): Record<string, string> {
+  const cabecalhos: Record<string, string> = json ? { 'Content-Type': 'application/json' } : {}
+  const local = cabecalhoLocalizacao()
+  if (local) cabecalhos['X-Localizacao'] = local
+  return cabecalhos
+}
+
 async function post<T>(path: string, body?: unknown): Promise<T> {
   const response = await fetch(`${API_BASE}/${path}`, {
     method: 'POST',
     credentials: 'include',
-    headers: { 'Content-Type': 'application/json' },
+    headers: cabecalhosAcao(true),
     body: body !== undefined ? JSON.stringify(body) : undefined,
   })
   return tratarResposta<T>(response, path)
@@ -116,19 +125,19 @@ async function put<T>(path: string, body?: unknown): Promise<T> {
   const response = await fetch(`${API_BASE}/${path}`, {
     method: 'PUT',
     credentials: 'include',
-    headers: { 'Content-Type': 'application/json' },
+    headers: cabecalhosAcao(true),
     body: body !== undefined ? JSON.stringify(body) : undefined,
   })
   return tratarResposta<T>(response, path)
 }
 
 async function del<T>(path: string): Promise<T> {
-  const response = await fetch(`${API_BASE}/${path}`, { method: 'DELETE', credentials: 'include' })
+  const response = await fetch(`${API_BASE}/${path}`, { method: 'DELETE', credentials: 'include', headers: cabecalhosAcao(false) })
   return tratarResposta<T>(response, path)
 }
 
 async function postForm<T>(path: string, form: FormData): Promise<T> {
-  const response = await fetch(`${API_BASE}/${path}`, { method: 'POST', credentials: 'include', body: form })
+  const response = await fetch(`${API_BASE}/${path}`, { method: 'POST', credentials: 'include', headers: cabecalhosAcao(false), body: form })
   return tratarResposta<T>(response, path)
 }
 
@@ -538,10 +547,53 @@ export interface DpDto {
   limite: number | null
   ativos: number | null
   setor: string | null
+  setor_pk?: number | null
 }
 
 export function listarDps(): Promise<{ success: boolean; results: DpDto[] }> {
   return get<{ success: boolean; results: DpDto[] }>('dp/lista')
+}
+
+export interface SetorDpDto {
+  pk: number
+  nome: string
+  // "FTTH-VSJ" → "VSJ"; null quando o nome não segue o padrão.
+  sigla: string | null
+}
+
+/** Setores para a CTO nova (e as cores/capacidades que o servidor aceita). */
+export function listarSetoresDp(): Promise<{
+  success: boolean
+  results: SetorDpDto[]
+  capacidades: number[]
+  // "{sigla}-CTO-{hub}.{numero}": padrão de nome do provedor.
+  formato_nome?: string
+}> {
+  return get('dp/setores')
+}
+
+/**
+ * Posição, cor e capacidade da CTO. Depende da ACL do técnico no Controllr
+ * (403 com mensagem quando não tem).
+ */
+export function editarDp(
+  dpPk: number,
+  dados: { lat?: number; lng?: number; precisao_m?: number; cor?: string; limite?: number },
+): Promise<{ success: boolean }> {
+  return post(`dp/${dpPk}/editar`, dados)
+}
+
+export function criarDp(dados: {
+  setor_pk: number
+  hub: number
+  numero: number
+  limite: number
+  cor: string
+  lat: number
+  lng: number
+  precisao_m?: number
+}): Promise<{ success: boolean; nome: string }> {
+  return post('dp/criar', dados)
 }
 
 // Projeto da rede (KMZ do servidor, backend/app/routers/mapa.py) — só o
@@ -923,9 +975,15 @@ export function iniciarOrdemServico(
 
 export function finalizarOrdemServico(
   ticketPk: number,
-  parametros: { opOsPk: number; opDesc?: string },
+  // onuSerial: o servidor lê o sinal dessa ONU no Controllr e grava na
+  // Auditoria junto da finalização.
+  parametros: { opOsPk: number; opDesc?: string; onuSerial?: string },
 ): Promise<{ success: boolean; results: unknown }> {
-  return post(`os/${ticketPk}/finalizar`, { op_os_pk: parametros.opOsPk, op_desc: parametros.opDesc })
+  return post(`os/${ticketPk}/finalizar`, {
+    op_os_pk: parametros.opOsPk,
+    op_desc: parametros.opDesc,
+    onu_serial: parametros.onuSerial || undefined,
+  })
 }
 
 // Desfazer exige op_desc — sem opcional, diferente das funções de marcar
@@ -1084,6 +1142,8 @@ export interface EventoAuditoria {
   ip: string
   acao: string
   alvo: Record<string, unknown>
+  // Localização do técnico na ação (só ações de campo).
+  local?: { lat: number; lng: number; precisao_m: number; idade_s: number } | null
 }
 
 export function acessoAuditoria(): Promise<{ permitido: boolean }> {
@@ -1096,6 +1156,8 @@ export function listarAuditoria(filtro: {
   de?: string
   ate?: string
   limite?: number
+  // Cliente, PPPoE, serial ou número do chamado/OS.
+  busca?: string
 }): Promise<{ eventos: EventoAuditoria[]; mais: boolean }> {
   return get<{ eventos: EventoAuditoria[]; mais: boolean }>('auditoria', filtro)
 }
